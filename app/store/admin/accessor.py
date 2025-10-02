@@ -12,15 +12,11 @@ if TYPE_CHECKING:
 
 class AdminAccessor(BaseAccessor):
     async def connect(self, app: "Application") -> None:
-        import yaml
-        with open('./config.yml', 'r') as f:
-            raw_config = yaml.safe_load(f)
-            admin_config = raw_config["admin"]
-
+        email = self.app.config.admin.email
         password = self.app.config.admin.password
         encode_password = base64.b64encode(password.encode('utf-8')).decode('utf-8')
 
-        await self.create_admin(admin_config["email"], encode_password)
+        await self.create_admin(email, encode_password)
 
     async def get_by_email(self, email: str) -> AdminModel | None:
         async with await self.app.database.get_session() as session:

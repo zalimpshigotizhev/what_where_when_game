@@ -1,10 +1,10 @@
 from sqlalchemy import Column, BigInteger, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
-from app.store.database.sqlalchemy_base import BaseModel
+from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin
 
 
-class ThemeModel(BaseModel):
+class ThemeMixin(TimedBaseMixin, BaseModel):
     __tablename__ = "themes"
     id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
     title = Column(String, unique=True)
@@ -15,21 +15,24 @@ class ThemeModel(BaseModel):
     )
 
 
-class QuestionModel(BaseModel):
+class QuestionMixin(TimedBaseMixin, BaseModel):
     __tablename__ = "questions"
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     title = Column(String, unique=True)
     theme_id = Column(BigInteger, ForeignKey("themes.id", ondelete="CASCADE"), nullable=False)
     theme = relationship("ThemeModel", back_populates="questions")
-    answers = relationship("AnswerModel", back_populates="question", lazy='subquery')
+    true_answer = relationship("AnswerModel", uselist=False, backref="question")
 
 
-class AnswerModel(BaseModel):
+class AnswerMixin(TimedBaseMixin, BaseModel):
     __tablename__ = "answers"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     title = Column(String)
-    is_correct = Column(Boolean)
-    question_id = Column(BigInteger, ForeignKey("questions.id", ondelete="CASCADE"))  # Внешний ключ
+    question_id = Column(
+        BigInteger,
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
 
-    question = relationship("QuestionModel", back_populates="answers")

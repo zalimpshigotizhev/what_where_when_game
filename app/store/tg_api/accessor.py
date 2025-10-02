@@ -18,7 +18,6 @@ if typing.TYPE_CHECKING:
     from app import Application
 
 API_PATH = "https://api.vk.com/method/"
-API_VERSION = "5.131"
 
 
 class VkApiAccessor(BaseAccessor):
