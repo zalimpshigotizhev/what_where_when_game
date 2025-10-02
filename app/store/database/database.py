@@ -26,7 +26,7 @@ class DatabaseConfig:
 
 def gen_db_config() -> DatabaseConfig:
     import yaml
-    with open('./etc/config.yaml', 'r') as f:
+    with open('./config.yml', 'r') as f:
         raw_config = yaml.safe_load(f)
         db_config: dict = raw_config["database"]
     config = DatabaseConfig(

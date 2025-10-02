@@ -131,7 +131,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+pgadmin/
+postgres/
+config.yml
 # Spyder project settings
 .spyderproject
 .spyproject
