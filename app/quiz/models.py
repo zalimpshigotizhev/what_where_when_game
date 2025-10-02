@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin
 
 
-class ThemeMixin(TimedBaseMixin, BaseModel):
+class ThemeModel(TimedBaseMixin, BaseModel):
     __tablename__ = "themes"
     id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
     title = Column(String, unique=True)
@@ -15,16 +15,16 @@ class ThemeMixin(TimedBaseMixin, BaseModel):
     )
 
 
-class QuestionMixin(TimedBaseMixin, BaseModel):
+class QuestionModel(TimedBaseMixin, BaseModel):
     __tablename__ = "questions"
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     title = Column(String, unique=True)
-    theme_id = Column(BigInteger, ForeignKey("themes.id", ondelete="CASCADE"), nullable=False)
+    theme_id = Column(BigInteger, ForeignKey("themes.id", ondelete="CASCADE"), nullable=False, unique=False)
     theme = relationship("ThemeModel", back_populates="questions")
     true_answer = relationship("AnswerModel", uselist=False, backref="question")
 
 
-class AnswerMixin(TimedBaseMixin, BaseModel):
+class AnswerModel(TimedBaseMixin, BaseModel):
     __tablename__ = "answers"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
