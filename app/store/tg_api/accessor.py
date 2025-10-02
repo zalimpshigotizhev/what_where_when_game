@@ -1,20 +1,16 @@
 import json
-import random
-import typing
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urljoin
 
 from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.store.tg_api.dataclasses import (
-    MessageTG,
-    CallbackTG, CommandTG
-)
+from app.store.tg_api.dataclasses import CallbackTG, CommandTG, MessageTG
 from app.store.tg_api.poller import Poller
 
-if typing.TYPE_CHECKING:
-    from app import Application
+if TYPE_CHECKING:
+    from app.web.app import Application
 
 API_PATH = "https://api.telegram.org/"
 
@@ -46,26 +42,6 @@ class TelegramApiAccessor(BaseAccessor):
     def _build_query(host: str, method: str, params: dict) -> str:
         return f"{urljoin(host, method)}?{urlencode(params)}"
 
-    # async def _get_long_poll_service(self) -> None:
-    #     async with self.session.get(
-    #         self._build_query(
-    #             host=self.server,
-    #             method="getUpdates",
-    #             params={
-    #                 'timeout': self.timeout,
-    #                 'offset': self.offset
-    #             },
-    #         )
-    #     ) as response:
-    #         result = (await response.json())["response"]
-    #         if result.get('ok') and result.get('result'):
-    #             updates = result['result']
-    #             if updates:
-    #                 self.offset = max(update['update_id'] for update in updates) + 1
-    #                 # pprint(updates)
-    #             return updates
-    #         return []
-
     async def poll(self):
         updates_datas = []
         async with self.session.get(
@@ -83,7 +59,9 @@ class TelegramApiAccessor(BaseAccessor):
             if result.get('ok') and result.get('result'):
                 updates_dicts = result['result']
                 if updates_dicts:
-                    self.offset = max(update['update_id'] for update in updates_dicts) + 1
+                    self.offset = max(
+                        update['update_id'] for update in updates_dicts
+                    ) + 1
                 for update in updates_dicts:
                     updates_datas = []
                     data: None = None
@@ -96,12 +74,15 @@ class TelegramApiAccessor(BaseAccessor):
                             data: CommandTG = message.to_command()
 
                         if data.chat.type == "private":
-                            # self.send_message(data.chat.id_, "Добавьте меня в группу")
+                            # self.send_message(
+                            #     data.chat.id_, "Добавьте меня в группу"
+                            # )
                             continue
 
-
                     elif 'callback_query' in update:
-                        callback = CallbackTG.from_dict(update["callback_query"])
+                        callback = CallbackTG.from_dict(
+                            update["callback_query"]
+                        )
                         data = callback
                     updates_datas.append(data)
             await self.app.store.bots_manager.handle_updates(updates_datas)
@@ -110,11 +91,10 @@ class TelegramApiAccessor(BaseAccessor):
             self,
             chat_id: int,
             text: str,
-            reply_markup: typing.Dict[str, typing.Any] = None,
+            reply_markup: dict[str, Any] | None = None,
             parse_mode: str = "Markdown"
     ) -> None:
-        """
-        Отправляет сообщение в конкретный чат
+        """Отправляет сообщение в конкретный чат
         :param chat_id: int
         :param text: str
         :param reply_markup: dict

@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING, Any
 
+import yaml
 from attr import dataclass
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
-    async_sessionmaker, create_async_engine,
+    async_sessionmaker,
+    create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
 
@@ -25,21 +27,20 @@ class DatabaseConfig:
 
 
 def gen_db_config() -> DatabaseConfig:
-    import yaml
     with open('./config.yml', 'r') as f:
         raw_config = yaml.safe_load(f)
         db_config: dict = raw_config["database"]
-    config = DatabaseConfig(
+    return DatabaseConfig(
         host=db_config.get("host"),
         port=db_config.get("port"),
         user=db_config.get("user"),
         password=db_config.get("password"),
         database=db_config.get("database")
     )
-    return config
 
 
 db_config = gen_db_config()
+
 
 def constr_config_var() -> str:
     return (f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}"

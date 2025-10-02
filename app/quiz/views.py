@@ -8,10 +8,10 @@ from app.quiz.schemes import (
     ThemeListSchema,
     ThemeSchema,
 )
-
 from app.web.app import View
 from app.web.middlewares import HTTP_ERROR_CODES
 from app.web.utils import error_json_response, json_response
+
 
 class ThemeAddView(View):
     @request_schema(ThemeSchema)
@@ -22,7 +22,10 @@ class ThemeAddView(View):
         if not is_exist:
             theme = await self.store.quizzes.create_theme(title=title)
         else:
-            return error_json_response(http_status=409, status=HTTP_ERROR_CODES[409])
+            return error_json_response(
+                http_status=409,
+                status=HTTP_ERROR_CODES[409]
+            )
 
         return json_response(data=ThemeSchema().dump(theme))
 
@@ -30,15 +33,10 @@ class ThemeAddView(View):
 class ThemeListView(View):
     @response_schema(ThemeListSchema)
     async def get(self):
-        result = []
         themes = await self.store.quizzes.list_themes()
-        for theme in themes:
-            result.append(
-                {
-                    "id": theme.id,
-                    "title": theme.title
-                }
-            )
+        result = [
+            {"id": theme.id, "title": theme.title} for theme in themes
+        ]
         return json_response(
             data={"themes": result}
         )
@@ -51,24 +49,43 @@ class QuestionAddView(View):
         title = self.data['title']
         theme_id = self.data['theme_id']
         answers = []
-        exist_is_Cor = False
+        exist_is_cor = False
         for answer in self.data['answers']:
             if answer["is_correct"] is True:
-                if exist_is_Cor is True:
-                    return error_json_response(http_status=400, status=HTTP_ERROR_CODES[400])
-                exist_is_Cor = True
-            answers.append(AnswerModel(title=answer["title"], is_correct=answer["is_correct"]))
+                if exist_is_cor is True:
+                    return error_json_response(
+                        http_status=400,
+                        status=HTTP_ERROR_CODES[400]
+                    )
+                exist_is_cor = True
+            answers.append(
+                AnswerModel(
+                    title=answer["title"],
+                    is_correct=answer["is_correct"]
+                )
+            )
 
-        if exist_is_Cor is False or len(answers) == 1:
-            return error_json_response(http_status=400, status=HTTP_ERROR_CODES[400])
+        if exist_is_cor is False or len(answers) == 1:
+            return error_json_response(
+                http_status=400,
+                status=HTTP_ERROR_CODES[400]
+            )
 
-        is_exists_theme = await self.request.app.store.quizzes.get_theme_by_id(theme_id)
+        store = self.request.app
+        is_exists_theme = await store.quizzes.get_theme_by_id(theme_id)
         if not is_exists_theme:
-            return error_json_response(http_status=404, status=HTTP_ERROR_CODES[404])
+            return error_json_response(
+                http_status=404,
+                status=HTTP_ERROR_CODES[404]
+            )
 
-        is_exists_question = await self.request.app.store.quizzes.get_question_by_title(title)
+        store = self.request.app.store
+        is_exists_question = await store.quizzes.get_question_by_title(title)
         if is_exists_question:
-            return error_json_response(http_status=409, status=HTTP_ERROR_CODES[409])
+            return error_json_response(
+                http_status=409,
+                status=HTTP_ERROR_CODES[409]
+            )
 
         question = await self.store.quizzes.create_question(
             title=title,
@@ -80,7 +97,9 @@ class QuestionAddView(View):
             "id": question.id,
             "title": question.title,
             "theme_id": question.theme_id,
-            "answers": [{"title":answer.title, "is_correct": answer.is_correct} for answer in question.answers]
+            "answers": [{
+                "title": answer.title, "is_correct": answer.is_correct
+            } for answer in question.answers]
 
         }
         return json_response(data=dict_quest)
@@ -95,10 +114,16 @@ class QuestionListView(View):
             try:
                 theme_id = int(theme_id)
             except ValueError:
-                return json_response(status=400, data={"error": "theme_id must be integer"})
+                return json_response(
+                    status=400,
+                    data={"error": "theme_id must be integer"}
+                )
 
         questions = await self.store.quizzes.list_questions(theme_id=theme_id)
 
-
-
-        return json_response(data={"questions": [QuestionSchema().dump(question) for question in questions]})
+        return json_response(
+            data={
+                "questions":
+                    [QuestionSchema().dump(question) for question in questions]
+            }
+        )

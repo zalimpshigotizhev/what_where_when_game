@@ -1,7 +1,7 @@
 import abc
+from collections.abc import Callable
 from dataclasses import dataclass
-from pprint import pprint
-from typing import Optional, Any, Callable
+from typing import Any
 
 
 @dataclass
@@ -9,9 +9,9 @@ class UserORBotTG:
     first_name: str
     id_: int
     is_bot: bool
-    is_premium: Optional[bool] = None
-    language_code: Optional[str] = None
-    username: Optional[str] = None
+    is_premium: bool | None = None
+    language_code: str | None = None
+    username: str | None = None
 
     @classmethod
     def from_dict(cls, data):
@@ -46,7 +46,7 @@ class EntityTG:
 class ChatTG:
     id_: int
     type: str
-    title: Optional[str] = None
+    title: str | None = None
 
     @classmethod
     def from_dict(cls, data):
@@ -56,13 +56,15 @@ class ChatTG:
             type=data.get("type"),
         )
 
+
 class UpdateABC(abc.ABC):
     from_: UserORBotTG
-    chat: Optional[ChatTG]
+    chat: ChatTG | None
 
     @abc.abstractmethod
     def from_dict(self, data):
         pass
+
 
 @dataclass
 class CommandTG(UpdateABC):
@@ -79,26 +81,24 @@ class CommandTG(UpdateABC):
         )
 
 
-
 @dataclass
 class MessageTG(UpdateABC):
     message_id: int
     date: int
     chat: ChatTG
-    from_: Optional[UserORBotTG] = None
-    text: Optional[str] = None
-    caption: Optional[str] = None
-    entities: Optional[list[EntityTG]] = None
-    caption_entities: Optional[list[EntityTG]] = None
+    from_: UserORBotTG | None = None
+    text: str | None = None
+    caption: str | None = None
+    entities: list[EntityTG] | None = None
+    caption_entities: list[EntityTG] | None = None
     photo: Any = None
     document: Any = None
     location: Any = None
     contact: Any = None
     reply_markup: Any = None
-    reply_to_message: Optional['MessageTG'] = None
-    forward_from: Optional[UserORBotTG] = None
-    forward_from_chat: Optional[ChatTG] = None
-
+    reply_to_message: type['MessageTG'] | None = None
+    forward_from: UserORBotTG | None = None
+    forward_from_chat: ChatTG | None = None
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -120,15 +120,23 @@ class MessageTG(UpdateABC):
             text=data.get("text"),
             caption=data.get("caption"),
             entities=create_list("entities", EntityTG.from_dict),
-            caption_entities=create_list("caption_entities", EntityTG.from_dict),
+            caption_entities=create_list(
+                "caption_entities", EntityTG.from_dict
+            ),
             photo=data.get("photo"),
             document=data.get("document"),
             location=data.get("location"),
             contact=data.get("contact"),
             reply_markup=data.get("reply_markup"),
-            reply_to_message=create_nested("reply_to_message", MessageTG.from_dict),
-            forward_from=create_nested("forward_from", UserORBotTG.from_dict),
-            forward_from_chat=create_nested("forward_from_chat", ChatTG.from_dict),
+            reply_to_message=create_nested(
+                "reply_to_message", MessageTG.from_dict
+            ),
+            forward_from=create_nested(
+                "forward_from", UserORBotTG.from_dict
+            ),
+            forward_from_chat=create_nested(
+                "forward_from_chat", ChatTG.from_dict
+            ),
         )
 
     @property
@@ -139,7 +147,7 @@ class MessageTG(UpdateABC):
                     return True
         return False
 
-    def to_command(self) -> Optional[CommandTG]:
+    def to_command(self) -> CommandTG | None:
         for entity in self.entities:
             if entity.type == "bot_command":
                 return CommandTG(
@@ -149,15 +157,16 @@ class MessageTG(UpdateABC):
                 )
         return None
 
+
 @dataclass
 class CallbackTG(UpdateABC):
     id_: str
     from_: UserORBotTG
-    message: Optional[MessageTG] = None
-    inline_message_id: Optional[str] = None
-    chat_instance: Optional[str] = None
-    data: Optional[str] = None
-    game_short_name: Optional[str] = None
+    message: MessageTG | None = None
+    inline_message_id: str | None = None
+    chat_instance: str | None = None
+    data: str | None = None
+    game_short_name: str | None = None
 
     @property
     def chat(self):

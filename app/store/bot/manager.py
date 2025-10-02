@@ -1,7 +1,7 @@
 import typing
 from logging import getLogger
 
-from app.store.tg_api.dataclasses import UpdateABC, MessageTG
+from app.store.tg_api.dataclasses import MessageTG, UpdateABC
 
 if typing.TYPE_CHECKING:
     from app import Application

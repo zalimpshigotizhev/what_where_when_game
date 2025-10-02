@@ -18,27 +18,23 @@ class QuizAccessor(BaseAccessor):
             await session.commit()
         return new_theme
 
-
     async def get_theme_by_title(self, title: str) -> ThemeModel | None:
         async with await self.app.database.get_session() as session:
             stmt = select(ThemeModel).where(ThemeModel.title == title)
             result = await session.execute(stmt)
-            theme = result.scalars().first()
-        return theme
+        return result.scalars().first()
 
     async def get_theme_by_id(self, id_: int) -> ThemeModel | None:
         async with await self.app.database.get_session() as session:
             stmt = select(ThemeModel).where(ThemeModel.id == id_)
             result = await session.execute(stmt)
-            theme = result.scalars().first()
-        return theme
+        return result.scalars().first()
 
     async def list_themes(self) -> Sequence[ThemeModel]:
         async with await self.app.database.get_session() as session:
             stmt = select(ThemeModel)
             result = await session.execute(stmt)
-            themes = result.scalars().all()
-        return themes
+        return result.scalars().all()
 
     async def create_question(
         self, title: str, theme_id: int, answers: Iterable[AnswerModel]
@@ -54,21 +50,25 @@ class QuizAccessor(BaseAccessor):
             await session.commit()
         return new_question
 
-    async def get_question_by_title(self, title: str) -> QuestionModel | None:
+    async def get_question_by_title(
+            self, title: str
+    ) -> QuestionModel | None:
         async with await self.app.database.get_session() as session:
-            stmt = select(QuestionModel).where(QuestionModel.title == title)
+            stmt = select(QuestionModel).where(
+                QuestionModel.title == title
+            )
             result = await session.execute(stmt)
-            theme = result.scalars().first()
-        return theme
+        return result.scalars().first()
 
     async def list_questions(
         self, theme_id: int | None = None
     ) -> Sequence[QuestionModel]:
         async with await self.app.database.get_session() as session:
             if theme_id is not None:
-                stmt = select(QuestionModel).where(QuestionModel.theme_id == theme_id)
+                stmt = select(QuestionModel).where(
+                    QuestionModel.theme_id == theme_id
+                )
             else:
                 stmt = select(QuestionModel)
             result = await session.execute(stmt)
-            themes = result.scalars().all()
-        return themes
+        return result.scalars().all()

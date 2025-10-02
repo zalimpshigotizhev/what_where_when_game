@@ -1,11 +1,12 @@
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy import Column, DateTime
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql.functions import func
 
 
 class BaseModel(DeclarativeBase):
     pass
+
 
 class TimedBaseMixin:
     @declared_attr

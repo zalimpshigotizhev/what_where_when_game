@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, ForeignKey, Boolean
+from sqlalchemy import BigInteger, Column, String
 from sqlalchemy.orm import relationship
 
 from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin

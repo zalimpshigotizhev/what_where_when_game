@@ -17,6 +17,7 @@ class QuestionSchema(Schema):
     theme_id = fields.Int(required=True)
     answers = fields.Nested(AnswerSchema, many=True, required=True)
 
+
 class ThemeListSchema(Schema):
     themes = fields.Nested(ThemeSchema, many=True)
 

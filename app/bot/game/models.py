@@ -1,11 +1,12 @@
 import enum
 
-from sqlalchemy import Column, BigInteger, ForeignKey, Boolean, Integer
+from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Enum
 
-from app.bot.user.models import UserModel #noqa
+from app.bot.user.models import UserModel  # noqa: F401
 from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin
+
 
 class GameState(enum.Enum):
     """Состояния бота"""
@@ -17,12 +18,12 @@ class GameState(enum.Enum):
     WAIT_ANSWER = "wait_answer"
     ARE_READY_NEXT_ROUND_PLAYERS = "are_ready_next_round_players"
 
+
 class StatusSession(enum.Enum):
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
-
 
 
 class SessionModel(TimedBaseMixin, BaseModel):
@@ -41,13 +42,13 @@ class SessionModel(TimedBaseMixin, BaseModel):
     rounds = relationship('RoundModel', back_populates="session",
                         foreign_keys='RoundModel.session_id')
 
-
     current_round = relationship(
             "RoundModel",
             foreign_keys=[current_round_id],
             post_update=True,  # важно для циклических зависимостей
             uselist=False  # одна запись, так как это foreign key
         )
+
 
 class PlayerModel(TimedBaseMixin, BaseModel):
     __tablename__ = "players"
@@ -98,7 +99,3 @@ class RoundModel(TimedBaseMixin, BaseModel):
     answer_player = relationship('PlayerModel',
                                  back_populates="answered_rounds",
                                  foreign_keys=[answer_player_id])
-
-
-
-

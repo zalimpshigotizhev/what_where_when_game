@@ -14,7 +14,9 @@ class AdminAccessor(BaseAccessor):
     async def connect(self, app: "Application") -> None:
         email = self.app.config.admin.email
         password = self.app.config.admin.password
-        encode_password = base64.b64encode(password.encode('utf-8')).decode('utf-8')
+        encode_password = base64.b64encode(
+            password.encode('utf-8')
+        ).decode('utf-8')
 
         await self.create_admin(email, encode_password)
 
@@ -22,17 +24,14 @@ class AdminAccessor(BaseAccessor):
         async with await self.app.database.get_session() as session:
             stmt = select(AdminModel).where(AdminModel.email == email)
             result = await session.execute(stmt)
-            user = result.scalars().first()
+        return result.scalars().first()
 
-        return user
+    async def is_exist(self, email: str) -> bool:
+        return bool(await self.get_by_email(email))
 
-
-    async def is_exist(self, email: str):
-        if await self.get_by_email(email):
-            return True
-        return False
-
-    async def create_admin(self, email: str, password: str) -> AdminModel:
+    async def create_admin(
+            self, email: str, password: str
+    ) -> AdminModel | None:
         if await self.is_exist(email):
             return
 

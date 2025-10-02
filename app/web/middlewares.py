@@ -51,7 +51,7 @@ async def error_handling_middleware(request: "Request", handler):
 @middleware
 async def auth_middleware(request: "Request", handler):
     # Список путей, которые не требуют авторизации
-    public_paths = ['/admin.login', '/admin.current']  # Добавьте сюда ваши публичные эндпоинты
+    public_paths = ['/admin.login', '/admin.current']
 
     if request.path in public_paths:
         return await handler(request)

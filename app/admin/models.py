@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String
+from sqlalchemy import BigInteger, Column, String
 
 from app.store.database.sqlalchemy_base import BaseModel
 
