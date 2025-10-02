@@ -4,48 +4,48 @@ from sqlalchemy import select
 
 from app.base.base_accessor import BaseAccessor
 from app.quiz.models import (
-    AnswerMixin,
-    QuestionMixin,
-    ThemeMixin,
+    AnswerModel,
+    QuestionModel,
+    ThemeModel,
 )
 
 
 class QuizAccessor(BaseAccessor):
-    async def create_theme(self, title: str) -> ThemeMixin:
+    async def create_theme(self, title: str) -> ThemeModel:
         async with await self.app.database.get_session() as session:
-            new_theme = ThemeMixin(title=title)
+            new_theme = ThemeModel(title=title)
             session.add(new_theme)
             await session.commit()
         return new_theme
 
 
-    async def get_theme_by_title(self, title: str) -> ThemeMixin | None:
+    async def get_theme_by_title(self, title: str) -> ThemeModel | None:
         async with await self.app.database.get_session() as session:
-            stmt = select(ThemeMixin).where(ThemeMixin.title == title)
+            stmt = select(ThemeModel).where(ThemeModel.title == title)
             result = await session.execute(stmt)
             theme = result.scalars().first()
         return theme
 
-    async def get_theme_by_id(self, id_: int) -> ThemeMixin | None:
+    async def get_theme_by_id(self, id_: int) -> ThemeModel | None:
         async with await self.app.database.get_session() as session:
-            stmt = select(ThemeMixin).where(ThemeMixin.id == id_)
+            stmt = select(ThemeModel).where(ThemeModel.id == id_)
             result = await session.execute(stmt)
             theme = result.scalars().first()
         return theme
 
-    async def list_themes(self) -> Sequence[ThemeMixin]:
+    async def list_themes(self) -> Sequence[ThemeModel]:
         async with await self.app.database.get_session() as session:
-            stmt = select(ThemeMixin)
+            stmt = select(ThemeModel)
             result = await session.execute(stmt)
             themes = result.scalars().all()
         return themes
 
     async def create_question(
-        self, title: str, theme_id: int, answers: Iterable[AnswerMixin]
-    ) -> QuestionMixin:
+        self, title: str, theme_id: int, answers: Iterable[AnswerModel]
+    ) -> QuestionModel:
 
         async with await self.app.database.get_session() as session:
-            new_question = QuestionMixin(
+            new_question = QuestionModel(
                 title=title,
                 theme_id=theme_id,
                 answers=answers
@@ -54,21 +54,21 @@ class QuizAccessor(BaseAccessor):
             await session.commit()
         return new_question
 
-    async def get_question_by_title(self, title: str) -> QuestionMixin | None:
+    async def get_question_by_title(self, title: str) -> QuestionModel | None:
         async with await self.app.database.get_session() as session:
-            stmt = select(QuestionMixin).where(QuestionMixin.title == title)
+            stmt = select(QuestionModel).where(QuestionModel.title == title)
             result = await session.execute(stmt)
             theme = result.scalars().first()
         return theme
 
     async def list_questions(
         self, theme_id: int | None = None
-    ) -> Sequence[QuestionMixin]:
+    ) -> Sequence[QuestionModel]:
         async with await self.app.database.get_session() as session:
             if theme_id is not None:
-                stmt = select(QuestionMixin).where(QuestionMixin.theme_id == theme_id)
+                stmt = select(QuestionModel).where(QuestionModel.theme_id == theme_id)
             else:
-                stmt = select(QuestionMixin)
+                stmt = select(QuestionModel)
             result = await session.execute(stmt)
             themes = result.scalars().all()
         return themes

@@ -1,6 +1,6 @@
 from aiohttp_apispec import querystring_schema, request_schema, response_schema
 
-from app.quiz.models import AnswerMixin
+from app.quiz.models import AnswerModel
 from app.quiz.schemes import (
     ListQuestionSchema,
     QuestionSchema,
@@ -57,7 +57,7 @@ class QuestionAddView(View):
                 if exist_is_Cor is True:
                     return error_json_response(http_status=400, status=HTTP_ERROR_CODES[400])
                 exist_is_Cor = True
-            answers.append(AnswerMixin(title=answer["title"], is_correct=answer["is_correct"]))
+            answers.append(AnswerModel(title=answer["title"], is_correct=answer["is_correct"]))
 
         if exist_is_Cor is False or len(answers) == 1:
             return error_json_response(http_status=400, status=HTTP_ERROR_CODES[400])

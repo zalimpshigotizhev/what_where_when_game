@@ -4,8 +4,8 @@ from sqlalchemy import Column, BigInteger, ForeignKey, Boolean, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Enum
 
+from app.bot.user.models import UserModel #noqa
 from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin
-
 
 class GameState(enum.Enum):
     """Состояния бота"""
@@ -36,6 +36,18 @@ class SessionModel(TimedBaseMixin, BaseModel):
         ForeignKey("rounds.id", ondelete="SET NULL"), unique=True
     )
 
+    players = relationship('PlayerModel', back_populates="session",
+                         foreign_keys='PlayerModel.session_id')
+    rounds = relationship('RoundModel', back_populates="session",
+                        foreign_keys='RoundModel.session_id')
+
+
+    current_round = relationship(
+            "RoundModel",
+            foreign_keys=[current_round_id],
+            post_update=True,  # важно для циклических зависимостей
+            uselist=False  # одна запись, так как это foreign key
+        )
 
 class PlayerModel(TimedBaseMixin, BaseModel):
     __tablename__ = "players"
@@ -51,6 +63,13 @@ class PlayerModel(TimedBaseMixin, BaseModel):
         BigInteger,
         ForeignKey("users.id", ondelete="CASCADE"), unique=False
     )
+
+    user = relationship('UserModel', back_populates="players")
+    session = relationship('SessionModel', back_populates="players")
+    answered_rounds = relationship('RoundModel',
+                                 back_populates="answer_player",
+                                 foreign_keys='RoundModel.answer_player_id',
+                                 lazy="joined")
 
 
 class RoundModel(TimedBaseMixin, BaseModel):
@@ -72,4 +91,14 @@ class RoundModel(TimedBaseMixin, BaseModel):
         ForeignKey("players.id", ondelete="SET NULL"),
         nullable=True,
     )
+
+    question = relationship('QuestionModel', back_populates="rounds")
+    session = relationship('SessionModel', back_populates="rounds",
+                         foreign_keys=[session_id])
+    answer_player = relationship('PlayerModel',
+                                 back_populates="answered_rounds",
+                                 foreign_keys=[answer_player_id])
+
+
+
 
