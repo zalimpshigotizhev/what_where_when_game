@@ -45,28 +45,24 @@ class TelegramApiAccessor(BaseAccessor):
     async def poll(self):
         updates_datas = []
         async with self.session.get(
-                self._build_query(
-                    host=self.server,
-                    method="getUpdates",
-                    params={
-                        'timeout': self.timeout,
-                        'offset': self.offset
-                    },
-                )
+            self._build_query(
+                host=self.server,
+                method="getUpdates",
+                params={"timeout": self.timeout, "offset": self.offset},
+            )
         ) as response:
             result = await response.json()
 
-            if result.get('ok') and result.get('result'):
-                updates_dicts = result['result']
+            if result.get("ok") and result.get("result"):
+                updates_dicts = result["result"]
                 if updates_dicts:
-                    self.offset = max(
-                        update['update_id'] for update in updates_dicts
-                    ) + 1
+                    self.offset = (
+                        max(update["update_id"] for update in updates_dicts) + 1
+                    )
                 for update in updates_dicts:
                     updates_datas = []
                     data: None = None
-                    if 'message' in update:
-
+                    if "message" in update:
                         message = MessageTG.from_dict(update["message"])
                         data: MessageTG = message
 
@@ -79,7 +75,7 @@ class TelegramApiAccessor(BaseAccessor):
                             # )
                             continue
 
-                    elif 'callback_query' in update:
+                    elif "callback_query" in update:
                         callback = CallbackTG.from_dict(
                             update["callback_query"]
                         )
@@ -88,11 +84,11 @@ class TelegramApiAccessor(BaseAccessor):
             await self.app.store.bots_manager.handle_updates(updates_datas)
 
     async def send_message(
-            self,
-            chat_id: int,
-            text: str,
-            reply_markup: dict[str, Any] | None = None,
-            parse_mode: str = "Markdown"
+        self,
+        chat_id: int,
+        text: str,
+        reply_markup: dict[str, Any] | None = None,
+        parse_mode: str = "Markdown",
     ) -> None:
         """Отправляет сообщение в конкретный чат
         :param chat_id: int
@@ -101,14 +97,10 @@ class TelegramApiAccessor(BaseAccessor):
         :param parse_mode: str (По дефолту Markdown)
         :return:
         """
-        params = {
-            'chat_id': chat_id,
-            'text': text,
-            'parse_mode': parse_mode
-        }
+        params = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
 
         if reply_markup:
-            params['reply_markup'] = json.dumps(reply_markup)
+            params["reply_markup"] = json.dumps(reply_markup)
 
         async with self.session.get(
             self._build_query(

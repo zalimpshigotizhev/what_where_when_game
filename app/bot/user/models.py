@@ -10,4 +10,4 @@ class UserModel(TimedBaseMixin, BaseModel):
     username_tg = Column(String, unique=True)
     username_id_tg = Column(BigInteger, unique=True)
 
-    players = relationship('PlayerModel', back_populates="user")
+    players = relationship("PlayerModel", back_populates="user")

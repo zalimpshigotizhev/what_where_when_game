@@ -39,24 +39,17 @@ class QuizAccessor(BaseAccessor):
     async def create_question(
         self, title: str, theme_id: int, answers: Iterable[AnswerModel]
     ) -> QuestionModel:
-
         async with await self.app.database.get_session() as session:
             new_question = QuestionModel(
-                title=title,
-                theme_id=theme_id,
-                answers=answers
+                title=title, theme_id=theme_id, answers=answers
             )
             session.add(new_question)
             await session.commit()
         return new_question
 
-    async def get_question_by_title(
-            self, title: str
-    ) -> QuestionModel | None:
+    async def get_question_by_title(self, title: str) -> QuestionModel | None:
         async with await self.app.database.get_session() as session:
-            stmt = select(QuestionModel).where(
-                QuestionModel.title == title
-            )
+            stmt = select(QuestionModel).where(QuestionModel.title == title)
             result = await session.execute(stmt)
         return result.scalars().first()
 

@@ -28,34 +28,23 @@ class AdminLoginView(View):
                 text="Email and password are required", status=400
             )
 
-        admin = await self.store.admins.get_by_email(
-            email=email
-        )
+        admin = await self.store.admins.get_by_email(email=email)
         if not admin:
             return error_json_response(
-                http_status=403,
-                status=HTTP_ERROR_CODES[403]
+                http_status=403, status=HTTP_ERROR_CODES[403]
             )
 
         decode_admin_password = base64.b64decode(
-            admin.password.encode('utf-8')
-        ).decode('utf-8')
+            admin.password.encode("utf-8")
+        ).decode("utf-8")
 
         if admin and decode_admin_password == password:
             response = json_response(
-                data={
-                    "id": admin.id,
-                    "email": admin.email
-                }
+                data={"id": admin.id, "email": admin.email}
             )
-            data = {
-                "id": admin.id,
-                "email": admin.email,
-                "is_admin": True
-            }
+            data = {"id": admin.id, "email": admin.email, "is_admin": True}
             data_for_cookie = encode_data(
-                json.dumps(data),
-                self.request.app.config.session.key
+                json.dumps(data), self.request.app.config.session.key
             )
             response.set_cookie(
                 name="session_id",
@@ -63,13 +52,12 @@ class AdminLoginView(View):
                 max_age=3600,
                 httponly=False,
                 secure=False,
-                samesite='Lax'
+                samesite="Lax",
             )
             return response
 
         return error_json_response(
-            http_status=403,
-            status=HTTP_ERROR_CODES[403]
+            http_status=403, status=HTTP_ERROR_CODES[403]
         )
 
 
@@ -80,8 +68,7 @@ class AdminCurrentView(View):
 
         if not auth_cookie:
             return error_json_response(
-                http_status=401,
-                status=HTTP_ERROR_CODES[401]
+                http_status=401, status=HTTP_ERROR_CODES[401]
             )
 
         data_for_cookie = json.loads(
@@ -92,15 +79,11 @@ class AdminCurrentView(View):
             data_for_cookie.get("email")
         )
 
-        if data_for_cookie and data_for_cookie.get('id') == current_admin.id:
+        if data_for_cookie and data_for_cookie.get("id") == current_admin.id:
             return json_response(
-                data={
-                    "id": current_admin.id,
-                    "email": current_admin.email
-                }
+                data={"id": current_admin.id, "email": current_admin.email}
             )
 
         return error_json_response(
-            http_status=401,
-            status=HTTP_ERROR_CODES[401]
+            http_status=401, status=HTTP_ERROR_CODES[401]
         )

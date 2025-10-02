@@ -22,7 +22,7 @@ class UserORBotTG:
                 is_bot=data.get("is_bot", False),
                 is_premium=data.get("is_premium"),
                 language_code=data.get("language_code"),
-                username=data.get("username")
+                username=data.get("username"),
             )
         return None
 
@@ -77,7 +77,7 @@ class CommandTG(UpdateABC):
         return cls(
             text=data["text"],
             chat=ChatTG.from_dict(data["chat"]),
-            from_=data["from"]
+            from_=data["from"],
         )
 
 
@@ -96,7 +96,7 @@ class MessageTG(UpdateABC):
     location: Any = None
     contact: Any = None
     reply_markup: Any = None
-    reply_to_message: type['MessageTG'] | None = None
+    reply_to_message: type["MessageTG"] | None = None
     forward_from: UserORBotTG | None = None
     forward_from_chat: ChatTG | None = None
 
@@ -131,9 +131,7 @@ class MessageTG(UpdateABC):
             reply_to_message=create_nested(
                 "reply_to_message", MessageTG.from_dict
             ),
-            forward_from=create_nested(
-                "forward_from", UserORBotTG.from_dict
-            ),
+            forward_from=create_nested("forward_from", UserORBotTG.from_dict),
             forward_from_chat=create_nested(
                 "forward_from_chat", ChatTG.from_dict
             ),
@@ -151,9 +149,11 @@ class MessageTG(UpdateABC):
         for entity in self.entities:
             if entity.type == "bot_command":
                 return CommandTG(
-                    text=self.text[entity.offset:entity.length + entity.offset],
+                    text=self.text[
+                        entity.offset : entity.length + entity.offset
+                    ],
                     from_=self.from_,
-                    chat=self.chat
+                    chat=self.chat,
                 )
         return None
 
@@ -188,4 +188,3 @@ class CallbackTG(UpdateABC):
             data=data.get("data"),
             game_short_name=data.get("game_short_name"),
         )
-

@@ -51,18 +51,16 @@ async def error_handling_middleware(request: "Request", handler):
 @middleware
 async def auth_middleware(request: "Request", handler):
     # Список путей, которые не требуют авторизации
-    public_paths = ['/admin.login', '/admin.current']
+    public_paths = ["/admin.login", "/admin.current"]
 
     if request.path in public_paths:
         return await handler(request)
 
     # Получаем куку с токеном (название куки зависит от вашей реализации)
-    auth_cookie = request.cookies.get('session_id')  # Или другое название куки
+    auth_cookie = request.cookies.get("session_id")  # Или другое название куки
     if not auth_cookie:
         return error_json_response(
-            http_status=401,
-            status=HTTP_ERROR_CODES[401]
-
+            http_status=401, status=HTTP_ERROR_CODES[401]
         )
 
     # Добавить проверку валидности

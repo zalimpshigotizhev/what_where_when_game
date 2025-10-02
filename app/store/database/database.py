@@ -27,7 +27,7 @@ class DatabaseConfig:
 
 
 def gen_db_config() -> DatabaseConfig:
-    with open('./config.yml', 'r') as f:
+    with open("./config.yml", "r") as f:
         raw_config = yaml.safe_load(f)
         db_config: dict = raw_config["database"]
     return DatabaseConfig(
@@ -35,7 +35,7 @@ def gen_db_config() -> DatabaseConfig:
         port=db_config.get("port"),
         user=db_config.get("user"),
         password=db_config.get("password"),
-        database=db_config.get("database")
+        database=db_config.get("database"),
     )
 
 
@@ -43,8 +43,10 @@ db_config = gen_db_config()
 
 
 def constr_config_var() -> str:
-    return (f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}"
-            f"/{db_config.database}")
+    return (
+        f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}"
+        f"/{db_config.database}"
+    )
 
 
 class Database:
@@ -74,7 +76,7 @@ class Database:
             bind=self.engine,
             class_=AsyncSession,
             expire_on_commit=False,
-            autoflush=False
+            autoflush=False,
         )
 
     async def disconnect(self, *args: Any, **kwargs: Any) -> None:

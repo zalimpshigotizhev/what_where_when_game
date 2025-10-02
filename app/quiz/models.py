@@ -7,48 +7,27 @@ from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin
 
 class ThemeModel(TimedBaseMixin, BaseModel):
     __tablename__ = "themes"
-    id = Column(
-        BigInteger,
-        primary_key=True,
-        autoincrement=True,
-        unique=True
-    )
+    id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
     title = Column(String, unique=True)
     questions = relationship(
-        "QuestionModel",
-        back_populates="theme",
-        cascade="all, delete-orphan"
+        "QuestionModel", back_populates="theme", cascade="all, delete-orphan"
     )
 
 
 class QuestionModel(TimedBaseMixin, BaseModel):
     __tablename__ = "questions"
-    id = Column(
-        BigInteger,
-        primary_key=True,
-        autoincrement=True
-    )
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     title = Column(String, unique=True)
     theme_id = Column(
         BigInteger,
         ForeignKey("themes.id", ondelete="CASCADE"),
         nullable=False,
-        unique=False
+        unique=False,
     )
 
-    theme = relationship(
-        "ThemeModel",
-        back_populates="questions"
-    )
-    true_answer = relationship(
-        "AnswerModel",
-        uselist=False,
-        backref="question"
-    )
-    rounds = relationship(
-        'RoundModel',
-        back_populates="question"
-    )
+    theme = relationship("ThemeModel", back_populates="questions")
+    true_answer = relationship("AnswerModel", uselist=False, backref="question")
+    rounds = relationship("RoundModel", back_populates="question")
 
 
 class AnswerModel(TimedBaseMixin, BaseModel):
@@ -60,6 +39,5 @@ class AnswerModel(TimedBaseMixin, BaseModel):
         BigInteger,
         ForeignKey("questions.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True
+        unique=True,
     )
-
