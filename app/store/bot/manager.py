@@ -2,9 +2,16 @@ import typing
 from logging import getLogger
 
 from app.store.bot.fsm import FSMContext
-from app.store.bot.gamebot import MainGameBot, WaitingPlayersProcessGameBot, AreReadyFirstRoundPlayersProcessGameBot, \
-    QuestionDiscussionProcessGameBot, VerdictCaptain, WaitAnswer, AreReadyNextRoundPlayersProcessGameBot
-from app.store.tg_api.dataclasses import MessageTG, UpdateABC
+from app.store.bot.gamebot import (
+    AreReadyFirstRoundPlayersProcessGameBot,
+    AreReadyNextRoundPlayersProcessGameBot,
+    MainGameBot,
+    QuestionDiscussionProcessGameBot,
+    VerdictCaptain,
+    WaitAnswer,
+    WaitingPlayersProcessGameBot,
+)
+from app.store.tg_api.dataclasses import UpdateABC
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -42,5 +49,3 @@ class BotManager:
                     result = await handler(update, self.fsm)
                     if result is not None:
                         break
-
-

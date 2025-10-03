@@ -1,12 +1,9 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
 from app.bot.game.models import GameState
-db_states = {
-    1213: {
-        "state": GameState.INACTIVE,
-        "data": {}
-    }
-}
+
+db_states = {1213: {"state": GameState.INACTIVE, "data": {}}}
+
 
 class StateStorage(ABC):
     @abstractmethod
@@ -29,6 +26,7 @@ class StateStorage(ABC):
     def clear_data(self, chat_id: int):
         pass
 
+
 class MemoryStorage(StateStorage):
     def get_state(self, chat_id: int):
         query = db_states.get(chat_id)
@@ -38,7 +36,6 @@ class MemoryStorage(StateStorage):
 
     def set_state(self, chat_id: int, state: GameState):
         query = db_states.get(chat_id)
-        print(query)
         if query:
             query["state"] = state
         else:
@@ -53,7 +50,6 @@ class MemoryStorage(StateStorage):
 
         query["data"] = kwargs
 
-
     def get_data(self, chat_id: int):
         query = db_states.get(chat_id)
         if query is None:
@@ -66,6 +62,7 @@ class MemoryStorage(StateStorage):
             query = self.set_state(chat_id, GameState.INACTIVE)
         del query["data"]
 
+
 class FSMContext:
     """Контекст FSM для хранения состояния пользователя/чата"""
 
@@ -73,8 +70,7 @@ class FSMContext:
         self.storage: StateStorage = MemoryStorage()
 
     def get_state(self, chat_id: int):
-        return  self.storage.get_state(chat_id=chat_id)
-
+        return self.storage.get_state(chat_id=chat_id)
 
     def set_state(self, chat_id: int, state: GameState) -> None:
         self.storage.set_state(chat_id=chat_id, state=state)

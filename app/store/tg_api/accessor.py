@@ -52,8 +52,7 @@ class TelegramApiAccessor(BaseAccessor):
             )
         ) as response:
             result = await response.json()
-            self.logger.info(f"Получили update! ----- {result}")
-
+            self.logger.info(result)
 
             if result.get("ok") and result.get("result"):
                 updates_dicts = result["result"]
@@ -113,59 +112,50 @@ class TelegramApiAccessor(BaseAccessor):
         ) as response:
             data = await response.json()
 
-            self.logger.info(f"Сообщение отправлено! ----- {data}")
+            self.logger.info(data)
 
             return MessageTG.from_dict(data.get("result"))
 
     async def answer_callback_query(
-            self,
-            callback_query_id: str,
-            text: str = "",
-            show_alert: bool = False,
-            cache_time: int = 0
+        self,
+        callback_query_id: str,
+        text: str = "",
+        show_alert: bool = False,
+        cache_time: int = 0,
     ) -> None:
-        """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю
-        """
+        """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю"""
         params = {
-            'callback_query_id': callback_query_id,
-            'show_alert': show_alert,
-            'cache_time': cache_time
+            "callback_query_id": callback_query_id,
+            "show_alert": show_alert,
+            "cache_time": cache_time,
         }
 
         if text:
-            params['text'] = text
+            params["text"] = text
 
         async with self.session.get(
-                self._build_query(
-                    self.server,
-                    "answerCallbackQuery",
-                    params=params,
-                )
+            self._build_query(
+                self.server,
+                "answerCallbackQuery",
+                params=params,
+            )
         ) as response:
             data = await response.json()
-            self.logger.info(f"Уведомление отправлено! ----- {data}")
+            self.logger.info(data)
 
-    async def delete_message(
-            self,
-            chat_id: int,
-            message_id: int
-    ) -> None:
-        """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю
-        """
-        params = {
-            'chat_id': chat_id,
-            'message_id': message_id
-        }
+    async def delete_message(self, chat_id: int, message_id: int) -> None:
+        """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю"""
+        params = {"chat_id": chat_id, "message_id": message_id}
 
         async with self.session.get(
-                self._build_query(
-                    self.server,
-                    "deleteMessage",
-                    params=params,
-                )
+            self._build_query(
+                self.server,
+                "deleteMessage",
+                params=params,
+            )
         ) as response:
             data = await response.json()
-            self.logger.info(f"Уведомление отправлено! ----- {data}")
+            self.logger.info(data)
 
     async def delete_messages(self, chat_id: int, message_ids: list[int]):
         for message_id in message_ids:

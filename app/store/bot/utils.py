@@ -1,10 +1,14 @@
-# Более сложный декоратор с дополнительной фильтрацией
 from functools import wraps
-from typing import Type, Union, Optional, Callable, Any
+from typing import Any
 
-from app.store.tg_api.dataclasses import UpdateABC, MessageTG, CommandTG, CallbackTG
-from app.store.bot.fsm import FSMContext
 from app.bot.game.models import GameState
+from app.store.bot.fsm import FSMContext
+from app.store.tg_api.dataclasses import (
+    CallbackTG,
+    CommandTG,
+    MessageTG,
+    UpdateABC,
+)
 
 
 class Filter:
@@ -18,7 +22,7 @@ class Filter:
 
 
 class TypeFilter(Filter):
-    def __init__(self, expected_type: Type[UpdateABC]):
+    def __init__(self, expected_type: type[UpdateABC]):
         self.expected_type = expected_type
 
     def check(self, update: UpdateABC, context: FSMContext) -> bool:
@@ -38,8 +42,11 @@ class TextFilter(Filter):
         self.text = text
 
     def check(self, update: UpdateABC, context: FSMContext) -> bool:
-        return (isinstance(update, MessageTG) or isinstance(update, CommandTG) and
-                update.text == self.text)
+        return (
+            isinstance(update, MessageTG)
+            or isinstance(update, CommandTG)
+            and update.text == self.text
+        )
 
 
 class CallbackDataFilter(Filter):
@@ -47,16 +54,15 @@ class CallbackDataFilter(Filter):
         self.callback_data = callback_data
 
     def check(self, update: UpdateABC, context: FSMContext) -> bool:
-        return (isinstance(update, CallbackTG) and
-                update.data == self.callback_data)
+        return (
+            isinstance(update, CallbackTG) and update.data == self.callback_data
+        )
 
 
-def filtered_handler(
-    *filters: Filter,
-    state: Optional[GameState] = None
-):
+def filtered_handler(*filters: Filter, state: GameState | None = None):
     """Улучшенный декоратор для хендлеров"""
-    def decorator(func: Callable):
+
+    def decorator(func: callable):
         @wraps(func)
         async def wrapper(self, update: UpdateABC, context: FSMContext) -> Any:
             # Проверяем все фильтры
@@ -73,7 +79,5 @@ def filtered_handler(
             return await func(self, update, context)
 
         return wrapper
+
     return decorator
-
-
-
