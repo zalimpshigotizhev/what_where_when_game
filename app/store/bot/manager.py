@@ -42,6 +42,7 @@ class BotManager:
                 self._handlers.extend(state_handler.handlers)
         return self._handlers
 
+    # TODO: СДелать Мидлварь для обработки исключений
     async def handle_updates(self, updates: list[UpdateABC]):
         for update in updates:
             for handler in self._handlers:

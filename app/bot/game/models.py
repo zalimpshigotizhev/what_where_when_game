@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer
+from sqlalchemy import JSON, BigInteger, Boolean, Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Enum
 
@@ -27,14 +27,41 @@ class StatusSession(enum.Enum):
     CANCELLED = "cancelled"
 
 
+class StateModel(TimedBaseMixin, BaseModel):
+    __tablename__ = "states"
+    id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
+    current_state = Column(Enum(GameState), default=GameState.INACTIVE)
+    data = Column(JSON, default=dict)
+
+    session_id = Column(BigInteger, ForeignKey("sessions.id"), unique=True)
+
+    session = relationship(
+        "SessionModel",
+        back_populates="state",
+        foreign_keys=[session_id],
+        uselist=False,
+    )
+
+
 class SessionModel(TimedBaseMixin, BaseModel):
     __tablename__ = "sessions"
     id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
     status = Column(Enum(StatusSession))
     chat_id = Column(BigInteger)
-    current_state = Column(Enum(GameState))
+
     current_round_id = Column(
-        BigInteger, ForeignKey("rounds.id", ondelete="SET NULL"), unique=True
+        BigInteger,
+        ForeignKey("rounds.id", ondelete="SET NULL"),
+        unique=True,
+        nullable=True,
+    )
+
+    state = relationship(
+        "StateModel",
+        back_populates="session",
+        uselist=False,
+        cascade="all, delete-orphan",
+        single_parent=True,
     )
 
     players = relationship(
@@ -51,8 +78,8 @@ class SessionModel(TimedBaseMixin, BaseModel):
     current_round = relationship(
         "RoundModel",
         foreign_keys=[current_round_id],
-        post_update=True,  # важно для циклических зависимостей
-        uselist=False,  # одна запись, так как это foreign key
+        post_update=True,
+        uselist=False,
     )
 
 
@@ -62,6 +89,7 @@ class PlayerModel(TimedBaseMixin, BaseModel):
     session_id = Column(
         BigInteger, ForeignKey("sessions.id", ondelete="CASCADE"), unique=False
     )
+    is_active = Column(Boolean, default=True)
     is_ready = Column(Boolean, default=False)
     is_captain = Column(Boolean, default=False)
     total_true_answers = Column(Integer, default=0)
@@ -86,7 +114,7 @@ class RoundModel(TimedBaseMixin, BaseModel):
         BigInteger, ForeignKey("sessions.id", ondelete="CASCADE"), unique=False
     )
     is_active = Column(Boolean, default=False)
-    is_correct_answer = Column(Boolean, default=False)
+    is_correct_answer = Column(Boolean, default=None, nullable=True)
     question_id = Column(
         BigInteger,
         ForeignKey("questions.id", ondelete="SET NULL"),

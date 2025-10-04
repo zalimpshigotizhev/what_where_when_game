@@ -1,6 +1,7 @@
 import typing
 
 from app.store.database.database import Database
+from app.store.game.accessor import SessionGameAccessor
 
 if typing.TYPE_CHECKING:
     from app import Application
@@ -15,6 +16,7 @@ class Store:
 
         self.quizzes = QuizAccessor(app)
         self.admins = AdminAccessor(app)
+        self.session_game = SessionGameAccessor(app)
         self.tg_api = TelegramApiAccessor(app)
         self.bots_manager = BotManager(app)
 

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from app.bot.game.models import GameState, StatusSession
 from app.store.bot import replicas
 from app.store.bot.fsm import FSMContext
 from app.store.bot.keyboards import main_keyboard, start_game_keyboard
@@ -18,8 +19,9 @@ if TYPE_CHECKING:
 class BotBase:
     def __init__(self, app: "Application"):
         self.app = app
+        self.fsm = FSMContext()
 
-        self.unnecessary_messages: list | None = None
+        self.unnecessary_messages: dict[int, list[int]] = {}
         self.handlers: list | None = None
         self._add_handlers_in_list()
 
@@ -33,10 +35,19 @@ class BotBase:
                         self.handlers.append(attr)
         return self.handlers
 
-    def add_message_in_unnecessary_messages(self, message_id: int):
-        if self.unnecessary_messages is None:
-            self.unnecessary_messages = []
-        self.unnecessary_messages.append(message_id)
+    def add_message_in_unnecessary_messages(
+        self, chat_id: int, message_id: int
+    ):
+        if chat_id not in self.unnecessary_messages:
+            self.unnecessary_messages[chat_id] = []
+        self.unnecessary_messages[chat_id].append(message_id)
+
+    async def deleted_unnecessary_messages(self, chat_id: int):
+        if self.unnecessary_messages.get(chat_id):
+            await self.app.store.tg_api.delete_messages(
+                chat_id, self.unnecessary_messages[chat_id]
+            )
+            self.unnecessary_messages[chat_id] = []
 
 
 class MainGameBot(BotBase):
@@ -51,7 +62,7 @@ class MainGameBot(BotBase):
             main_keyboard,
         )
         self.add_message_in_unnecessary_messages(
-            message_id=bot_message.message_id
+            chat_id=command.chat.id_, message_id=bot_message.message_id
         )
 
     @filtered_handler(TypeFilter(CallbackTG), CallbackDataFilter("start_game"))
@@ -59,12 +70,24 @@ class MainGameBot(BotBase):
         self, callback: CallbackTG, context: FSMContext
     ) -> None:
         """Обрабатывает сообщения в личных чатах"""
-        await self.app.store.tg_api.delete_messages(
-            callback.chat.id_, self.unnecessary_messages
+        session_game_store = self.app.store.session_game
+        new_session_game = await session_game_store.create_session_game(
+            chat_id=callback.chat.id_,
+            status=StatusSession.PENDING,
+            current_state=GameState.WAITING_FOR_PLAYERS,
+            current_round_id=None,
         )
-        await self.app.store.tg_api.delete_message(
-            callback.chat.id_, callback.message.message_id
+        await session_game_store.create_player(
+            session_id=new_session_game.id,
+            id_tg=callback.from_.id_,
+            username_tg=callback.from_.username,
+            is_captain=True,
         )
+        self.add_message_in_unnecessary_messages(
+            chat_id=callback.chat.id_, message_id=callback.message.message_id
+        )
+        await self.deleted_unnecessary_messages(callback.chat.id_)
+
         await self.app.store.tg_api.answer_callback_query(
             callback.id_, "Игра начинается! Вы будете капитаном."
         )
@@ -85,7 +108,7 @@ class MainGameBot(BotBase):
             callback.chat.id_, replicas.RULES_INFO
         )
         self.add_message_in_unnecessary_messages(
-            message_id=bot_message.message_id
+            chat_id=callback.chat.id_, message_id=bot_message.message_id
         )
 
     @filtered_handler(TypeFilter(CallbackTG), CallbackDataFilter("show_rating"))
@@ -97,12 +120,63 @@ class MainGameBot(BotBase):
             callback.chat.id_, replicas.RATING_INFO
         )
         self.add_message_in_unnecessary_messages(
-            message_id=bot_message.message_id
+            chat_id=callback.chat.id_, message_id=bot_message.message_id
         )
 
 
 class WaitingPlayersProcessGameBot(BotBase):
-    pass
+    @filtered_handler(TypeFilter(CallbackTG), CallbackDataFilter("join_game"))
+    async def handle_join_game(
+        self, callback: CallbackTG, context: FSMContext
+    ) -> None:
+        """Обрабатывает сообщения в личных чатах"""
+        session_game = self.app.store.session_game
+        user_tg = callback.from_
+
+        current_session = await session_game.get_curr_game_session_by_chat_id(
+            chat_id=callback.chat.id_
+        )
+
+        if await session_game.is_user_in_session(
+            user_tg.id_, current_session.id
+        ):
+            await self.app.store.tg_api.answer_callback_query(
+                callback_query_id=callback.id_,
+                text="Вы уже учавствуете в игре!",
+            )
+        else:
+            await session_game.create_player(
+                session_id=current_session.id,
+                id_tg=callback.from_.id_,
+                username_tg=callback.from_.username,
+            )
+            await self.app.store.tg_api.answer_callback_query(
+                callback_query_id=callback.id_, text="Теперь вы участник игры!"
+            )
+
+    # @filtered_handler(
+    #     TypeFilter(CallbackTG),
+    #     CallbackDataFilter("start_game_from_captain")
+    # )
+    # async def handle_start_game_from_captain(
+    #         self,
+    #         callback: CallbackTG,
+    #         context: FSMContext
+    # ) -> None:
+    #     """Обрабатывает сообщения в личных чатах"""
+    #     ...
+    #
+    # @filtered_handler(
+    #     TypeFilter(CallbackTG),
+    #     CallbackDataFilter("finish_game")
+    # )
+    # async def handle_finish_game(
+    #         self,
+    #         callback: CallbackTG,
+    #         context: FSMContext
+    # ) -> None:
+    #     """Обрабатывает сообщения в личных чатах"""
+    #     ...
 
 
 class AreReadyFirstRoundPlayersProcessGameBot(BotBase):
