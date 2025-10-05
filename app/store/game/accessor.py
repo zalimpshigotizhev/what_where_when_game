@@ -68,9 +68,7 @@ class SessionGameAccessor(BaseAccessor):
         return result.scalars().first()
 
     async def get_session_participants(
-            self,
-            session_game_id: int,
-            active_only: bool | None = None
+        self, session_game_id: int, active_only: bool | None = None
     ) -> list[PlayerModel]:
         async with await self.app.database.get_session() as session:
             stmt = (
@@ -85,9 +83,7 @@ class SessionGameAccessor(BaseAccessor):
             elif active_only is False:
                 stmt = stmt.where(PlayerModel.is_active is False)
 
-            stmt = stmt.options(
-                joinedload(PlayerModel.user)
-            )
+            stmt = stmt.options(joinedload(PlayerModel.user))
 
             result = await session.execute(stmt)
             players = result.unique().scalars().all()
@@ -148,7 +144,7 @@ class SessionGameAccessor(BaseAccessor):
                 .where(
                     PlayerModel.session_id == session_game_id,
                     UserModel.username_id_tg == id_tg,
-                    PlayerModel.is_active is False
+                    PlayerModel.is_active is False,
                 )
             )
             result = await session.execute(stmt)
@@ -171,9 +167,7 @@ class SessionGameAccessor(BaseAccessor):
         return new_player
 
     async def get_player(
-            self,
-            session_game_id: int,
-            user_id: int
+        self, session_game_id: int, user_id: int
     ) -> PlayerModel | None:
         async with await self.app.database.get_session() as session:
             stmt = (

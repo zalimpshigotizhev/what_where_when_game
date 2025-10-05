@@ -42,14 +42,14 @@ class BotBase:
         self, chat_id: int, message_id: int
     ) -> None:
         data = await self.app.store.fsm.get_data(chat_id)
-        if (data.get("unnecessary_messages") is None or
-                type(data.get("unnecessary_messages")) is not list):
+        if (
+            data.get("unnecessary_messages") is None
+            or type(data.get("unnecessary_messages")) is not list
+        ):
             data["unnecessary_messages"] = []
 
         data["unnecessary_messages"].append(message_id)
-        await self.app.store.fsm.update_data(
-            chat_id=chat_id, new_data=data
-        )
+        await self.app.store.fsm.update_data(chat_id=chat_id, new_data=data)
 
     async def deleted_unnecessary_messages(self, chat_id: int):
         data = await self.app.store.fsm.get_data(chat_id)
@@ -62,9 +62,7 @@ class BotBase:
             chat_id, unnecessary_messages
         )
         data["unnecessary_messages"] = []
-        await self.app.store.fsm.update_data(
-            chat_id=chat_id, new_data=data
-        )
+        await self.app.store.fsm.update_data(chat_id=chat_id, new_data=data)
 
 
 class MainGameBot(BotBase):
@@ -159,8 +157,7 @@ class WaitingPlayersProcessGameBot(BotBase):
             chat_id=callback.chat.id_
         )
         participants = await game_store.get_session_participants(
-            session_game_id=current_session.id,
-            active_only=True
+            session_game_id=current_session.id, active_only=True
         )
         ids_participant: list[int] = [
             partic.user.username_id_tg for partic in participants
@@ -182,13 +179,10 @@ class WaitingPlayersProcessGameBot(BotBase):
             )
 
     @filtered_handler(
-        TypeFilter(CallbackTG),
-        CallbackDataFilter("start_game_from_captain")
+        TypeFilter(CallbackTG), CallbackDataFilter("start_game_from_captain")
     )
     async def handle_start_game_from_captain(
-            self,
-            callback: CallbackTG,
-            context: FSMContext
+        self, callback: CallbackTG, context: FSMContext
     ) -> None:
         """Обрабатывает сообщения в личных чатах"""
         game_store = self.app.store.session_game
@@ -198,49 +192,44 @@ class WaitingPlayersProcessGameBot(BotBase):
         )
 
         player = await game_store.get_player(
-            session_game_id=current_session.id,
-            user_id=callback.from_.id_
+            session_game_id=current_session.id, user_id=callback.from_.id_
         )
 
-        if (player is None or
-            player.is_active is None or
-            player.is_active is False):
+        if (
+            player is None
+            or player.is_active is None
+            or player.is_active is False
+        ):
             await self.app.store.tg_api.answer_callback_query(
                 callback_query_id=callback.id_,
-                text="Вы вообще не участвуйте в игре!"
+                text="Вы вообще не участвуйте в игре!",
             )
 
         elif player.is_captain is True:
             await self.app.store.tg_api.answer_callback_query(
                 callback_query_id=callback.id_,
-                text="Игра начинается GOOOOD LUCKK!"
+                text="Игра начинается GOOOOD LUCKK!",
             )
 
             await self.deleted_unnecessary_messages(chat_id=callback.chat.id_)
             mess = await self.app.store.tg_api.send_message(
                 chat_id=callback.chat.id_,
                 text="Капитан начал игру, готовы к первому вопросу?",
-                reply_markup=are_ready_keyboard
+                reply_markup=are_ready_keyboard,
             )
             await self.add_message_in_unnecessary_messages(
-                chat_id=callback.chat.id_,
-                message_id=mess.message_id
+                chat_id=callback.chat.id_, message_id=mess.message_id
             )
 
         elif player.is_captain is False:
             await self.app.store.tg_api.answer_callback_query(
                 callback_query_id=callback.id_,
-                text="Игру может начать только капитан команды!"
+                text="Игру может начать только капитан команды!",
             )
 
-    @filtered_handler(
-        TypeFilter(CallbackTG),
-        CallbackDataFilter("finish_game")
-    )
+    @filtered_handler(TypeFilter(CallbackTG), CallbackDataFilter("finish_game"))
     async def handle_finish_game(
-            self,
-            callback: CallbackTG,
-            context: FSMContext
+        self, callback: CallbackTG, context: FSMContext
     ) -> None:
         """Обрабатывает сообщения в личных чатах"""
         game_store = self.app.store.session_game
@@ -250,21 +239,22 @@ class WaitingPlayersProcessGameBot(BotBase):
         )
 
         player = await game_store.get_player(
-            session_game_id=current_session.id,
-            user_id=callback.from_.id_
+            session_game_id=current_session.id, user_id=callback.from_.id_
         )
 
-        if (player is None or
-            player.is_active is None or
-            player.is_active is False):
+        if (
+            player is None
+            or player.is_active is None
+            or player.is_active is False
+        ):
             await self.app.store.tg_api.answer_callback_query(
                 callback_query_id=callback.id_,
-                text="Вы итак не участвуйте в игре!"
+                text="Вы итак не участвуйте в игре!",
             )
         elif player.is_captain is True:
             await self.app.store.tg_api.answer_callback_query(
                 callback_query_id=callback.id_,
-                text="Вы капитан и вы заканчиваете игру!"
+                text="Вы капитан и вы заканчиваете игру!",
             )
         elif player.is_captain is False:
             await self.app.store.tg_api.answer_callback_query(
@@ -273,14 +263,9 @@ class WaitingPlayersProcessGameBot(BotBase):
 
 
 class AreReadyFirstRoundPlayersProcessGameBot(BotBase):
-    @filtered_handler(
-        TypeFilter(CallbackTG),
-        CallbackDataFilter("ready")
-    )
+    @filtered_handler(TypeFilter(CallbackTG), CallbackDataFilter("ready"))
     async def handle_finish_game(
-            self,
-            callback: CallbackTG,
-            context: FSMContext
+        self, callback: CallbackTG, context: FSMContext
     ) -> None:
         """Обрабатывает сообщения в личных чатах"""
 
