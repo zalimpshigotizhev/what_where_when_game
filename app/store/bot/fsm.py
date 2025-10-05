@@ -1,11 +1,23 @@
+import typing
 from abc import ABC, abstractmethod
 
-from app.bot.game.models import GameState
+from sqlalchemy import select
+
+from app.bot.game.models import (
+    GameState,
+    SessionModel,
+    StateModel,
+    StatusSession,
+)
+
+if typing.TYPE_CHECKING:
+    from app.web.app import Application
+
 
 db_states = {1213: {"state": GameState.INACTIVE, "data": {}}}
 
 
-class StateStorage(ABC):
+class StateStorageABC(ABC):
     @abstractmethod
     def get_state(self, chat_id: int):
         pass
@@ -19,7 +31,7 @@ class StateStorage(ABC):
         pass
 
     @abstractmethod
-    def get_data(self, chat_id: int):
+    async def get_data(self, chat_id: int) -> dict:
         pass
 
     @abstractmethod
@@ -27,7 +39,12 @@ class StateStorage(ABC):
         pass
 
 
-class MemoryStorage(StateStorage):
+class BaseStorage:
+    def __init__(self, app: "Application"):
+        self.app = app
+
+
+class MemoryStorageABC(StateStorageABC, BaseStorage):
     def get_state(self, chat_id: int):
         query = db_states.get(chat_id)
         if query is None:
@@ -63,23 +80,92 @@ class MemoryStorage(StateStorage):
         del query["data"]
 
 
+class PostgresAsyncStorage(StateStorageABC, BaseStorage):
+    async def get_state(self, chat_id: int) -> GameState:
+        async with await self.app.database.get_session() as session:
+            stmt = select(StateModel.current_state).join(SessionModel).where(
+                SessionModel.chat_id == chat_id,
+                SessionModel.status != StatusSession.COMPLETED,
+                SessionModel.status != StatusSession.CANCELLED,
+                StateModel.session_id == SessionModel.id
+            )
+            res = await session.execute(stmt)
+            state: GameState = res.scalars().one_or_none()
+            return state
+
+    async def set_state(self, chat_id: int, new_state: GameState) -> None:
+        async with await self.app.database.get_session() as session:
+            stmt = select(StateModel).join(SessionModel).where(
+                SessionModel.chat_id == chat_id,
+                SessionModel.status != StatusSession.COMPLETED,
+                SessionModel.status != StatusSession.CANCELLED,
+                StateModel.session_id == SessionModel.id
+            )
+            res = await session.execute(stmt)
+            state: StateModel = res.scalars().one_or_none()
+            state.current_state = state
+            await session.commit()
+
+    async def update_data(self, chat_id: int, new_data: dict) -> None:
+        async with await self.app.database.get_session() as session:
+            stmt = select(StateModel).join(SessionModel).where(
+                SessionModel.chat_id == chat_id,
+                SessionModel.status != StatusSession.COMPLETED,
+            SessionModel.status != StatusSession.CANCELLED,
+                StateModel.session_id == SessionModel.id
+            )
+            res = await session.execute(stmt)
+            state: StateModel = res.scalars().one_or_none()
+            state.data = new_data
+            await session.commit()
+
+    async def get_data(self, chat_id: int) -> dict:
+        async with await self.app.database.get_session() as session:
+            stmt = select(StateModel.data).join(SessionModel).where(
+                SessionModel.chat_id == chat_id,
+                SessionModel.status != StatusSession.COMPLETED,
+                SessionModel.status != StatusSession.CANCELLED,
+                StateModel.session_id == SessionModel.id
+            )
+            res = await session.execute(stmt)
+            return res.scalars().one_or_none()
+
+    async def clear_data(self, chat_id: int):
+        async with await self.app.database.get_session() as session:
+            stmt = select(StateModel).join(SessionModel).where(
+                SessionModel.chat_id == chat_id,
+                SessionModel.status != StatusSession.COMPLETED,
+                SessionModel.status != StatusSession.CANCELLED,
+                StateModel.session_id == SessionModel.id
+            )
+            res = await session.execute(stmt)
+            state: StateModel = res.scalars().one_or_none()
+            state.data = {}
+            await session.commit()
+
+
 class FSMContext:
     """Контекст FSM для хранения состояния пользователя/чата"""
 
-    def __init__(self):
-        self.storage: StateStorage = MemoryStorage()
+    def __init__(self, app: "Application"):
+        self.app = app
+        self.storage: StateStorageABC = PostgresAsyncStorage(app)
 
-    def get_state(self, chat_id: int):
-        return self.storage.get_state(chat_id=chat_id)
+    async def get_state(self, chat_id: int) -> GameState:
+        return await self.storage.get_state(chat_id=chat_id)
 
-    def set_state(self, chat_id: int, state: GameState) -> None:
-        self.storage.set_state(chat_id=chat_id, state=state)
+    async def set_state(self, chat_id: int, new_state: GameState) -> None:
+        return await self.storage.set_state(
+            chat_id=chat_id, new_state=new_state
+        )
 
-    def update_data(self, chat_id: int, **kwargs) -> None:
-        self.storage.update_data(chat_id=chat_id)
+    async def update_data(self, chat_id: int, new_data: dict) -> None:
+        return await self.storage.update_data(
+            chat_id=chat_id, new_data=new_data
+        )
 
-    def get_data(self, chat_id: int):
-        self.storage.get_data(chat_id=chat_id)
+    async def get_data(self, chat_id: int) -> dict:
+        return await self.storage.get_data(chat_id=chat_id)
 
-    def clear_data(self, chat_id: int) -> None:
-        self.storage.clear_data(chat_id=chat_id)
+    async def clear_data(self, chat_id: int) -> None:
+        return await self.storage.clear_data(chat_id=chat_id)

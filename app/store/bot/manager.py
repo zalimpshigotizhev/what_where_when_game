@@ -1,7 +1,6 @@
 import typing
 from logging import getLogger
 
-from app.store.bot.fsm import FSMContext
 from app.store.bot.gamebot import (
     AreReadyFirstRoundPlayersProcessGameBot,
     AreReadyNextRoundPlayersProcessGameBot,
@@ -20,7 +19,6 @@ if typing.TYPE_CHECKING:
 class BotManager:
     def __init__(self, app: "Application"):
         self.app = app
-        self.fsm = FSMContext()
         self.states_handler = [
             MainGameBot(self.app),
             WaitingPlayersProcessGameBot(self.app),
@@ -47,6 +45,6 @@ class BotManager:
         for update in updates:
             for handler in self._handlers:
                 if callable(handler):
-                    result = await handler(update, self.fsm)
+                    result = await handler(update, self.app.store.fsm)
                     if result is not None:
                         break

@@ -15,3 +15,9 @@ start_game_keyboard = {
         [{"text": "Закончить игру", "callback_data": "finish_game"}],
     ]
 }
+
+are_ready_keyboard = {
+    "inline_keyboard": [
+        [{"text": "Готов!", "callback_data": "ready"}],
+    ]
+}

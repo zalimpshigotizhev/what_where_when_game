@@ -1,5 +1,6 @@
 import typing
 
+from app.store.bot.fsm import FSMContext
 from app.store.database.database import Database
 from app.store.game.accessor import SessionGameAccessor
 
@@ -19,6 +20,7 @@ class Store:
         self.session_game = SessionGameAccessor(app)
         self.tg_api = TelegramApiAccessor(app)
         self.bots_manager = BotManager(app)
+        self.fsm = FSMContext(app)
 
 
 def setup_store(app: "Application"):

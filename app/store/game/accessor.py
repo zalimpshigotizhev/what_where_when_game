@@ -1,4 +1,5 @@
 from sqlalchemy import exc, select
+from sqlalchemy.orm import joinedload
 
 from app.base.base_accessor import BaseAccessor
 from app.bot.game.models import (
@@ -32,13 +33,17 @@ class SessionGameAccessor(BaseAccessor):
                 SessionModel.status != StatusSession.COMPLETED,
             )
             res = await session.execute(stmt)
-            instance: StateModel = res.scalars().first()
-            if instance:
-                raise ActiveSessionError(
-                    f"В БД уже есть чат с  {chat_id=}. "
-                    f"Current session ID: {instance.id}, "
-                    f"status: {instance.status}"
-                )
+            instance: SessionModel = res.scalars().first()
+
+            if instance is not None:
+                if instance.status == StatusSession.PROCESSING:
+                    raise ActiveSessionError(
+                        f"В БД уже есть чат с  {chat_id=}. "
+                        f"Current session ID: {instance.id}, "
+                        f"status: {instance.status}"
+                    )
+                return instance
+
             default_state = StateModel(current_state=current_state, data={})
             new_game_session = SessionModel(
                 chat_id=chat_id,
@@ -62,19 +67,32 @@ class SessionGameAccessor(BaseAccessor):
             result = await session.execute(stmt)
         return result.scalars().first()
 
-    async def is_user_in_session(self, user_id_tg: int, session_game_id: int):
+    async def get_session_participants(
+            self,
+            session_game_id: int,
+            active_only: bool | None = None
+    ) -> list[PlayerModel]:
         async with await self.app.database.get_session() as session:
             stmt = (
                 select(PlayerModel)
                 .join(UserModel)
-                .where(
-                    PlayerModel.session_id == session_game_id,
-                    UserModel.username_id_tg == user_id_tg,
-                )
+                .where(PlayerModel.session_id == session_game_id)
             )
+
+            # Добавляем фильтр по активности, если нужно
+            if active_only is True:
+                stmt = stmt.where(PlayerModel.is_active is True)
+            elif active_only is False:
+                stmt = stmt.where(PlayerModel.is_active is False)
+
+            stmt = stmt.options(
+                joinedload(PlayerModel.user)
+            )
+
             result = await session.execute(stmt)
-            user = result.unique().scalar_one_or_none()
-        return user is not None
+            players = result.unique().scalars().all()
+
+        return list(players)
 
     async def get_or_create_user(
         self, username_tg: str, id_tg: int
@@ -111,10 +129,11 @@ class SessionGameAccessor(BaseAccessor):
 
     async def create_player(
         self,
-        session_id: int,
+        session_game_id: int,
         id_tg: int,
         username_tg,
         total_true_answers: int = 0,
+        is_active: bool = True,
         is_ready: bool = False,
         is_captain: bool = False,
     ) -> PlayerModel:
@@ -123,9 +142,26 @@ class SessionGameAccessor(BaseAccessor):
                 username_tg=username_tg, id_tg=id_tg
             )
 
+            stmt = (
+                select(PlayerModel)
+                .join(UserModel)
+                .where(
+                    PlayerModel.session_id == session_game_id,
+                    UserModel.username_id_tg == id_tg,
+                    PlayerModel.is_active is False
+                )
+            )
+            result = await session.execute(stmt)
+            instance: PlayerModel = result.unique().scalar_one_or_none()
+            if instance is not None:
+                instance.is_active = True
+                await session.commit()
+                return instance
+
             new_player = PlayerModel(
-                session_id=session_id,
+                session_id=session_game_id,
                 is_ready=is_ready,
+                is_active=is_active,
                 is_captain=is_captain,
                 total_true_answers=total_true_answers,
                 user_id=user.id,
@@ -133,6 +169,24 @@ class SessionGameAccessor(BaseAccessor):
             session.add(new_player)
             await session.commit()
         return new_player
+
+    async def get_player(
+            self,
+            session_game_id: int,
+            user_id: int
+    ) -> PlayerModel | None:
+        async with await self.app.database.get_session() as session:
+            stmt = (
+                select(PlayerModel)
+                .join(UserModel)
+                .where(
+                    PlayerModel.session_id == session_game_id,
+                    UserModel.username_id_tg == user_id,
+                )
+            )
+            result = await session.execute(stmt)
+            player: PlayerModel = result.unique().scalar_one_or_none()
+            return player
 
     async def create_round(
         self,
