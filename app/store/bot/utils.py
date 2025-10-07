@@ -59,7 +59,7 @@ class CallbackDataFilter(Filter):
         )
 
 
-def filtered_handler(*filters: Filter, state: GameState | None = None):
+def filtered_handler(*filters: Filter):
     """Улучшенный декоратор для хендлеров"""
 
     def decorator(func: callable):
@@ -68,12 +68,6 @@ def filtered_handler(*filters: Filter, state: GameState | None = None):
             # Проверяем все фильтры
             for filter_obj in filters:
                 if not filter_obj(update, context):
-                    return None
-
-            # Проверяем состояние если указано
-            if state is not None:
-                current_state = context.get_state(update.chat.id_)
-                if current_state != state:
                     return None
 
             return await func(self, update, context)

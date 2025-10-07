@@ -23,7 +23,7 @@ class StateStorageABC(ABC):
         pass
 
     @abstractmethod
-    def set_state(self, chat_id: int, state: GameState):
+    def set_state(self, chat_id: int, new_state: GameState):
         pass
 
     @abstractmethod
@@ -111,7 +111,7 @@ class PostgresAsyncStorage(StateStorageABC, BaseStorage):
             )
             res = await session.execute(stmt)
             state: StateModel = res.scalars().one_or_none()
-            state.current_state = state
+            state.current_state = new_state
             await session.commit()
 
     async def update_data(self, chat_id: int, new_data: dict) -> None:
