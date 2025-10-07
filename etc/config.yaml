@@ -8,3 +8,4 @@ sentry:
   env: dev
 
 store: {}
+

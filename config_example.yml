@@ -1,0 +1,14 @@
+session:
+  key: seesion_key
+admin:
+  email: email
+  password: password
+database:
+  host: host
+  port: port
+  user: user
+  password: password
+  database: database
+bot:
+  token: token
+  group_id: group_id
