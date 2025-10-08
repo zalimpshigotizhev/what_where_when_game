@@ -79,6 +79,7 @@ class SessionModel(TimedBaseMixin, BaseModel):
         foreign_keys=[current_round_id],
         post_update=True,
         uselist=False,
+        lazy="joined",
     )
 
 
@@ -125,7 +126,9 @@ class RoundModel(TimedBaseMixin, BaseModel):
         nullable=True,
     )
 
-    question = relationship("QuestionModel", back_populates="rounds")
+    question = relationship(
+        "QuestionModel", back_populates="rounds", lazy="joined"
+    )
     session = relationship(
         "SessionModel", back_populates="rounds", foreign_keys=[session_id]
     )
@@ -133,4 +136,5 @@ class RoundModel(TimedBaseMixin, BaseModel):
         "PlayerModel",
         back_populates="answered_rounds",
         foreign_keys=[answer_player_id],
+        lazy="joined",
     )

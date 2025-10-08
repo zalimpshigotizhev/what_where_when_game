@@ -33,8 +33,8 @@ class StateFilter(Filter):
     def __init__(self, expected_state: GameState):
         self.expected_state = expected_state
 
-    def check(self, update: UpdateABC, context: FSMContext) -> bool:
-        return context.get_state(update.chat.id_) == self.expected_state
+    def check(self, update: UpdateABC, context: GameState | None) -> bool:
+        return context == self.expected_state
 
 
 class TextFilter(Filter):

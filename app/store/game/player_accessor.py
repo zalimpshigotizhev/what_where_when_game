@@ -42,6 +42,23 @@ class PlayerAccessor(BaseAccessor):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
+    async def get_player_by_username_tg(
+        self,
+        session_id: int,
+        username_tg: int,
+    ) -> PlayerModel | None:
+        async with await self.app.database.get_session() as session:
+            stmt = (
+                select(PlayerModel)
+                .join(PlayerModel.user)
+                .where(
+                    PlayerModel.session_id == session_id,
+                    UserModel.username_tg == username_tg,
+                )
+            )
+            result = await session.execute(stmt)
+            return result.unique().scalar_one_or_none()
+
     async def get_player_by_idtg(
         self,
         session_id: int,
@@ -57,7 +74,7 @@ class PlayerAccessor(BaseAccessor):
                 )
             )
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return result.unique().scalar_one_or_none()
 
     async def set_player_is_active(
         self, session_id: int, id_tg: int, new_active: bool
@@ -72,7 +89,7 @@ class PlayerAccessor(BaseAccessor):
                 )
             )
             result = await session.execute(stmt)
-            exist_player: PlayerModel = result.scalar_one_or_none()
+            exist_player: PlayerModel = result.unique().scalar_one_or_none()
             exist_player.is_active = new_active
             await session.commit()
             return exist_player
@@ -94,3 +111,16 @@ class PlayerAccessor(BaseAccessor):
             exist_player.is_ready = new_active
             await session.commit()
             return exist_player
+
+    async def set_all_players_is_ready_false(self, session_id: int) -> None:
+        async with await self.app.database.get_session() as session:
+            stmt = select(PlayerModel).where(
+                PlayerModel.session_id == session_id,
+                PlayerModel.is_active.is_(True),
+                PlayerModel.is_ready.is_(True),
+            )
+            result = await session.execute(stmt)
+            players = result.unique().scalars().all()
+            for player in players:
+                player.is_ready = False
+            await session.commit()

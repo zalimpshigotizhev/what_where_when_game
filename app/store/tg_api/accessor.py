@@ -20,7 +20,7 @@ class TelegramApiAccessor(BaseAccessor):
         super().__init__(app, *args, **kwargs)
         self.session: ClientSession | None = None
         self.poller: Poller | None = None
-        self.timeout = 30
+        self.timeout = 60
         self.offset = 0
         self.server: str = f"{API_PATH}bot{self.app.config.bot.token}/"
 
@@ -62,7 +62,6 @@ class TelegramApiAccessor(BaseAccessor):
                     )
                 for update in updates_dicts:
                     updates_datas = []
-                    data: None = None
                     if "message" in update:
                         message = MessageTG.from_dict(update["message"])
                         data: MessageTG = message
@@ -75,13 +74,14 @@ class TelegramApiAccessor(BaseAccessor):
                             #     data.chat.id_, "Добавьте меня в группу"
                             # )
                             continue
+                        updates_datas.append(data)
 
                     elif "callback_query" in update:
                         callback = CallbackTG.from_dict(
                             update["callback_query"]
                         )
                         data = callback
-                    updates_datas.append(data)
+                        updates_datas.append(data)
             await self.app.store.bots_manager.handle_updates(updates_datas)
 
     async def send_message(

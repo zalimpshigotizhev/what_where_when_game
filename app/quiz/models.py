@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import BigInteger, Column, ForeignKey, String
 from sqlalchemy.orm import relationship
 
@@ -25,9 +27,20 @@ class QuestionModel(TimedBaseMixin, BaseModel):
         unique=False,
     )
 
-    theme = relationship("ThemeModel", back_populates="questions")
-    true_answer = relationship("AnswerModel", uselist=False, backref="question")
+    theme = relationship(
+        "ThemeModel", back_populates="questions", lazy="joined"
+    )
+    true_answer = relationship(
+        "AnswerModel", uselist=False, backref="question", lazy="joined"
+    )
     rounds = relationship("RoundModel", back_populates="question")
+
+    def is_answer_is_true(self, answer: str) -> bool:
+        normalized_input = re.sub(r"\s+", " ", answer.lower().strip())
+        normalized_correct = re.sub(
+            r"\s+", " ", self.true_answer.title.lower().strip()
+        )
+        return normalized_input == normalized_correct
 
 
 class AnswerModel(TimedBaseMixin, BaseModel):
@@ -35,6 +48,7 @@ class AnswerModel(TimedBaseMixin, BaseModel):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     title = Column(String)
+    description = Column(String)
     question_id = Column(
         BigInteger,
         ForeignKey("questions.id", ondelete="CASCADE"),

@@ -4,6 +4,7 @@ from app.store.bot.fsm import FSMContext
 from app.store.database.database import Database
 from app.store.game.accessor import OldAccessor
 from app.store.game.player_accessor import PlayerAccessor
+from app.store.game.round_accessor import RoundAccessor
 from app.store.game.session_accessor import GameSessionAccessor
 from app.store.game.user_accessor import UserAccessor
 from app.store.timer.timer_manager import TimerManager
@@ -27,6 +28,7 @@ class Store:
         self.game_session = GameSessionAccessor(app)
         self.users = UserAccessor(app)
         self.players = PlayerAccessor(app)
+        self.rounds = RoundAccessor(app)
 
         # Таймер
         self.timer_manager = TimerManager(app)

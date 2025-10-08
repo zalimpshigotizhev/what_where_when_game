@@ -1,6 +1,6 @@
 from collections.abc import Iterable, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.base.base_accessor import BaseAccessor
 from app.quiz.models import (
@@ -8,6 +8,10 @@ from app.quiz.models import (
     QuestionModel,
     ThemeModel,
 )
+
+
+class DontExistOneQuestionError(Exception):
+    pass
 
 
 class QuizAccessor(BaseAccessor):
@@ -46,6 +50,15 @@ class QuizAccessor(BaseAccessor):
             session.add(new_question)
             await session.commit()
         return new_question
+
+    async def random_question(self) -> QuestionModel:
+        async with await self.app.database.get_session() as session:
+            stmt = select(QuestionModel).order_by(func.random()).limit(1)
+            result = await session.execute(stmt)
+            random_question = result.scalar()
+            if random_question is None:
+                raise DontExistOneQuestionError("Нет ни одного вопроса")
+        return random_question
 
     async def get_question_by_title(self, title: str) -> QuestionModel | None:
         async with await self.app.database.get_session() as session:

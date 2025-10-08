@@ -30,7 +30,7 @@ class Timer:
 
     def cancel(self):
         self._cancelled = True
-        if self.task and not self.task.done():
+        if self.task:
             self.task.cancel()
 
     def is_running(self):

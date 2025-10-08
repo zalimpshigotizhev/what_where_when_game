@@ -1,9 +1,10 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.base.base_accessor import BaseAccessor
 from app.bot.game.models import (
     GameState,
+    RoundModel,
     SessionModel,
     StateModel,
     StatusSession,
@@ -74,6 +75,7 @@ class GameSessionAccessor(BaseAccessor):
         self,
         chat_id: int,
         inload_players: bool = False,
+        include_curr_round: bool = False,
     ) -> SessionModel | None:
         """Возвращает сессию у которой:
         SessionModel.status in
@@ -94,8 +96,11 @@ class GameSessionAccessor(BaseAccessor):
             if inload_players:
                 stmt = stmt.options(selectinload(SessionModel.players))
 
+            if include_curr_round:
+                stmt = stmt.options(selectinload(SessionModel.current_round))
+
             result = await session.execute(stmt)
-            return result.scalars().one_or_none()
+            return result.unique().scalars().one_or_none()
 
     async def set_status(
         self, session_id: int, new_status: StatusSession
@@ -110,7 +115,60 @@ class GameSessionAccessor(BaseAccessor):
             stmt = select(SessionModel).filter_by(id=session_id)
 
             result = await session.execute(stmt)
-            game_session: SessionModel = result.scalars().one_or_none()
+            game_session: SessionModel = result.unique().scalars().one_or_none()
             game_session.status = new_status
             await session.commit()
             return game_session
+
+    async def set_current_round(
+        self, session_id: int, round_id: int
+    ) -> SessionModel:
+        """Обновляет SessionModel.current_round_id
+        :param session_id: SessionModel.id
+        :param round_id: id текущего раунда
+        :return: Обновленный SessionModel
+        """
+        async with await self.app.database.get_session() as session:
+            stmt = select(SessionModel).filter_by(id=session_id)
+
+            result = await session.execute(stmt)
+            game_session: SessionModel = result.unique().scalars().one_or_none()
+            game_session.current_round_id = round_id
+            await session.commit()
+            return game_session
+
+    async def gen_score(self, session_id: int) -> dict:
+        """Генерирует счет игры на основе завершенных раундов
+
+        RoundModel.is_correct_answer == True - балл в пользу Знатоков
+        RoundModel.is_correct_answer == False - балл в пользу Бота
+
+        :param session_id: ID сессии
+        :return: Словарь с результатами
+        {'experts': int, 'bot': int, 'total_rounds': int}
+        """
+        async with await self.app.database.get_session() as session:
+            experts_score_query = select(func.count(RoundModel.id)).where(
+                RoundModel.session_id == session_id,
+                RoundModel.is_correct_answer.is_(True),
+            )
+
+            bot_score_query = select(func.count(RoundModel.id)).where(
+                RoundModel.session_id == session_id,
+                RoundModel.is_correct_answer.is_(False),
+            )
+
+            total_rounds_query = select(func.count(RoundModel.id)).where(
+                RoundModel.session_id == session_id,
+                RoundModel.is_correct_answer.isnot(None),
+            )
+
+            experts_score = await session.scalar(experts_score_query)
+            bot_score = await session.scalar(bot_score_query)
+            total_rounds = await session.scalar(total_rounds_query)
+
+            return {
+                "experts": experts_score or 0,
+                "bot": bot_score or 0,
+                "total_rounds": total_rounds or 0,
+            }
