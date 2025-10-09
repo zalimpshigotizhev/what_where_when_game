@@ -33,8 +33,8 @@ class StateFilter(Filter):
     def __init__(self, expected_state: GameState):
         self.expected_state = expected_state
 
-    def check(self, update: UpdateABC, context: FSMContext) -> bool:
-        return context.get_state(update.chat.id_) == self.expected_state
+    def check(self, update: UpdateABC, context: GameState | None) -> bool:
+        return context == self.expected_state
 
 
 class TextFilter(Filter):
@@ -59,7 +59,7 @@ class CallbackDataFilter(Filter):
         )
 
 
-def filtered_handler(*filters: Filter, state: GameState | None = None):
+def filtered_handler(*filters: Filter):
     """Улучшенный декоратор для хендлеров"""
 
     def decorator(func: callable):
@@ -68,12 +68,6 @@ def filtered_handler(*filters: Filter, state: GameState | None = None):
             # Проверяем все фильтры
             for filter_obj in filters:
                 if not filter_obj(update, context):
-                    return None
-
-            # Проверяем состояние если указано
-            if state is not None:
-                current_state = context.get_state(update.chat.id_)
-                if current_state != state:
                     return None
 
             return await func(self, update, context)

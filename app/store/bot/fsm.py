@@ -23,7 +23,7 @@ class StateStorageABC(ABC):
         pass
 
     @abstractmethod
-    def set_state(self, chat_id: int, state: GameState):
+    def set_state(self, chat_id: int, new_state: GameState):
         pass
 
     @abstractmethod
@@ -81,7 +81,7 @@ class MemoryStorageABC(StateStorageABC, BaseStorage):
 
 
 class PostgresAsyncStorage(StateStorageABC, BaseStorage):
-    async def get_state(self, chat_id: int) -> GameState:
+    async def get_state(self, chat_id: int) -> GameState | None:
         async with await self.app.database.get_session() as session:
             stmt = (
                 select(StateModel.current_state)
@@ -111,7 +111,7 @@ class PostgresAsyncStorage(StateStorageABC, BaseStorage):
             )
             res = await session.execute(stmt)
             state: StateModel = res.scalars().one_or_none()
-            state.current_state = state
+            state.current_state = new_state
             await session.commit()
 
     async def update_data(self, chat_id: int, new_data: dict) -> None:
@@ -171,7 +171,7 @@ class FSMContext:
         self.app = app
         self.storage: StateStorageABC = PostgresAsyncStorage(app)
 
-    async def get_state(self, chat_id: int) -> GameState:
+    async def get_state(self, chat_id: int) -> GameState | None:
         return await self.storage.get_state(chat_id=chat_id)
 
     async def set_state(self, chat_id: int, new_state: GameState) -> None:

@@ -70,7 +70,7 @@ class Database:
                 password=db_config.password,
                 port=db_config.port,
             ),
-            echo=True,
+            # echo=True,
         )
         self.session = async_sessionmaker(
             bind=self.engine,

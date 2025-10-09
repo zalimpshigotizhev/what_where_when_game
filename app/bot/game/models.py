@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import JSON, BigInteger, Boolean, Column, ForeignKey, Integer
+from sqlalchemy import JSON, BigInteger, Boolean, Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Enum
 
@@ -46,9 +46,8 @@ class StateModel(TimedBaseMixin, BaseModel):
 class SessionModel(TimedBaseMixin, BaseModel):
     __tablename__ = "sessions"
     id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
-    status = Column(Enum(StatusSession))
     chat_id = Column(BigInteger)
-
+    status = Column(Enum(StatusSession))
     current_round_id = Column(
         BigInteger,
         ForeignKey("rounds.id", ondelete="SET NULL"),
@@ -80,6 +79,7 @@ class SessionModel(TimedBaseMixin, BaseModel):
         foreign_keys=[current_round_id],
         post_update=True,
         uselist=False,
+        lazy="joined",
     )
 
 
@@ -89,15 +89,15 @@ class PlayerModel(TimedBaseMixin, BaseModel):
     session_id = Column(
         BigInteger, ForeignKey("sessions.id", ondelete="CASCADE"), unique=False
     )
-    is_active = Column(Boolean, default=True)
+    # TODO: Добавлено nullable=False
+    is_active = Column(Boolean, default=True, nullable=False)
     is_ready = Column(Boolean, default=False)
     is_captain = Column(Boolean, default=False)
-    total_true_answers = Column(Integer, default=0)
     user_id = Column(
         BigInteger, ForeignKey("users.id", ondelete="CASCADE"), unique=False
     )
 
-    user = relationship("UserModel", back_populates="players")
+    user = relationship("UserModel", back_populates="players", lazy="joined")
     session = relationship("SessionModel", back_populates="players")
     answered_rounds = relationship(
         "RoundModel",
@@ -126,7 +126,9 @@ class RoundModel(TimedBaseMixin, BaseModel):
         nullable=True,
     )
 
-    question = relationship("QuestionModel", back_populates="rounds")
+    question = relationship(
+        "QuestionModel", back_populates="rounds", lazy="joined"
+    )
     session = relationship(
         "SessionModel", back_populates="rounds", foreign_keys=[session_id]
     )
@@ -134,4 +136,5 @@ class RoundModel(TimedBaseMixin, BaseModel):
         "PlayerModel",
         back_populates="answered_rounds",
         foreign_keys=[answer_player_id],
+        lazy="joined",
     )

@@ -6,7 +6,8 @@ from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.store.tg_api.dataclasses import CallbackTG, CommandTG, MessageTG
+from app.store.bot.consts import MESSAGE_FOR_PRIVAT
+from app.store.tg_api.dataclasses import CallbackTG, MessageTG
 from app.store.tg_api.poller import Poller
 
 if TYPE_CHECKING:
@@ -20,7 +21,7 @@ class TelegramApiAccessor(BaseAccessor):
         super().__init__(app, *args, **kwargs)
         self.session: ClientSession | None = None
         self.poller: Poller | None = None
-        self.timeout = 30
+        self.timeout = 60
         self.offset = 0
         self.server: str = f"{API_PATH}bot{self.app.config.bot.token}/"
 
@@ -61,27 +62,26 @@ class TelegramApiAccessor(BaseAccessor):
                         max(update["update_id"] for update in updates_dicts) + 1
                     )
                 for update in updates_dicts:
-                    updates_datas = []
-                    data: None = None
                     if "message" in update:
                         message = MessageTG.from_dict(update["message"])
                         data: MessageTG = message
 
                         if message.is_command:
-                            data: CommandTG = message.to_command()
+                            data = message.to_command()
 
                         if data.chat.type == "private":
-                            # self.send_message(
-                            #     data.chat.id_, "Добавьте меня в группу"
-                            # )
+                            await self.send_message(
+                                chat_id=data.chat.id_, text=MESSAGE_FOR_PRIVAT
+                            )
                             continue
+                        updates_datas.append(data)
 
                     elif "callback_query" in update:
                         callback = CallbackTG.from_dict(
                             update["callback_query"]
                         )
                         data = callback
-                    updates_datas.append(data)
+                        updates_datas.append(data)
             await self.app.store.bots_manager.handle_updates(updates_datas)
 
     async def send_message(

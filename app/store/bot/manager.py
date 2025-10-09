@@ -3,7 +3,6 @@ from logging import getLogger
 
 from app.store.bot.gamebot import (
     AreReadyFirstRoundPlayersProcessGameBot,
-    AreReadyNextRoundPlayersProcessGameBot,
     MainGameBot,
     QuestionDiscussionProcessGameBot,
     VerdictCaptain,
@@ -26,7 +25,6 @@ class BotManager:
             QuestionDiscussionProcessGameBot(self.app),
             VerdictCaptain(self.app),
             WaitAnswer(self.app),
-            AreReadyNextRoundPlayersProcessGameBot(self.app),
         ]
         self.logger = getLogger("handler")
         self._handlers: list | None = None
@@ -43,8 +41,11 @@ class BotManager:
     # TODO: СДелать Мидлварь для обработки исключений
     async def handle_updates(self, updates: list[UpdateABC]):
         for update in updates:
+            curr_state = await self.app.store.fsm.get_state(
+                chat_id=update.chat.id_
+            )
             for handler in self._handlers:
                 if callable(handler):
-                    result = await handler(update, self.app.store.fsm)
+                    result = await handler(update, curr_state)
                     if result is not None:
                         break

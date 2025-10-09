@@ -1,5 +1,5 @@
 from sqlalchemy import exc, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 from app.base.base_accessor import BaseAccessor
 from app.bot.game.models import (
@@ -18,8 +18,12 @@ class ActiveSessionError(Exception):
     pass
 
 
-class SessionGameAccessor(BaseAccessor):
-    async def create_session_game(
+class ExistPlayerForSessionError(Exception):
+    pass
+
+
+class OldAccessor(BaseAccessor):
+    async def create_or_exist_session_game(
         self,
         chat_id: int,
         status: StatusSession,
@@ -27,6 +31,7 @@ class SessionGameAccessor(BaseAccessor):
         current_round_id: RoundModel,
     ) -> SessionModel:
         async with await self.app.database.get_session() as session:
+            # Проверяем есть ли уже сессия
             stmt = select(SessionModel).where(
                 SessionModel.chat_id == chat_id,
                 SessionModel.status != StatusSession.CANCELLED,
@@ -36,14 +41,19 @@ class SessionGameAccessor(BaseAccessor):
             instance: SessionModel = res.scalars().first()
 
             if instance is not None:
+                # Если есть сессия которая в процессе игры,
+                # то вызываем исключения
                 if instance.status == StatusSession.PROCESSING:
                     raise ActiveSessionError(
                         f"В БД уже есть чат с  {chat_id=}. "
                         f"Current session ID: {instance.id}, "
                         f"status: {instance.status}"
                     )
+                # Если есть сессия StatusSession.PENDING,
+                # то просто возвращаем его и ничего не происходит
                 return instance
 
+            # Если сессии нет - создаём
             default_state = StateModel(current_state=current_state, data={})
             new_game_session = SessionModel(
                 chat_id=chat_id,
@@ -55,9 +65,28 @@ class SessionGameAccessor(BaseAccessor):
             await session.commit()
         return new_game_session
 
-    async def get_curr_game_session_by_chat_id(
-        self, chat_id: int
+    async def set_status_game(
+        self,
+        session_id: int,
+        new_status_game: StatusSession,
     ) -> SessionModel:
+        async with await self.app.database.get_session() as session:
+            stmt = select(SessionModel).where(
+                SessionModel.id == session_id,
+                SessionModel.status != StatusSession.CANCELLED,
+                SessionModel.status != StatusSession.COMPLETED,
+            )
+            result = await session.execute(stmt)
+            instance: SessionModel = result.scalars().one_or_none()
+            if instance is None:
+                self.app.logger.error(
+                    "Попытка поменять статус у несуществующей сессии"
+                )
+            instance.status = new_status_game
+            await session.commit()
+        return instance
+
+    async def get_curr_game_session(self, chat_id: int) -> SessionModel:
         async with await self.app.database.get_session() as session:
             stmt = select(SessionModel).where(
                 SessionModel.chat_id == chat_id,
@@ -71,19 +100,16 @@ class SessionGameAccessor(BaseAccessor):
         self, session_game_id: int, active_only: bool | None = None
     ) -> list[PlayerModel]:
         async with await self.app.database.get_session() as session:
-            stmt = (
-                select(PlayerModel)
-                .join(UserModel)
-                .where(PlayerModel.session_id == session_game_id)
+            stmt = select(PlayerModel).where(
+                PlayerModel.session_id == session_game_id
             )
 
-            # Добавляем фильтр по активности, если нужно
             if active_only is True:
                 stmt = stmt.where(PlayerModel.is_active is True)
             elif active_only is False:
                 stmt = stmt.where(PlayerModel.is_active is False)
 
-            stmt = stmt.options(joinedload(PlayerModel.user))
+            stmt = stmt.options(selectinload(PlayerModel.user))
 
             result = await session.execute(stmt)
             players = result.unique().scalars().all()
@@ -123,7 +149,7 @@ class SessionGameAccessor(BaseAccessor):
                 # Елси не совпадает username_tg с username в БД
         return instance
 
-    async def create_player(
+    async def create_or_activity_player(
         self,
         session_game_id: int,
         id_tg: int,
@@ -144,15 +170,25 @@ class SessionGameAccessor(BaseAccessor):
                 .where(
                     PlayerModel.session_id == session_game_id,
                     UserModel.username_id_tg == id_tg,
-                    PlayerModel.is_active is False,
+                    # PlayerModel.is_active is False,
                 )
             )
             result = await session.execute(stmt)
             instance: PlayerModel = result.unique().scalar_one_or_none()
             if instance is not None:
-                instance.is_active = True
-                await session.commit()
-                return instance
+                # Если player существует просто is_active=False,
+                # а это происходит когда player подключился к сессии
+                # потом вышел из игры,
+                # то у него должна быть возможность присоединиться обратно
+                if instance.is_active is False:
+                    instance.is_active = True
+                    await session.commit()
+                    return instance
+
+                if instance.is_active is True:
+                    raise ExistPlayerForSessionError(
+                        "Уже существует player для этого user в этом session"
+                    )
 
             new_player = PlayerModel(
                 session_id=session_game_id,
@@ -167,7 +203,7 @@ class SessionGameAccessor(BaseAccessor):
         return new_player
 
     async def get_player(
-        self, session_game_id: int, user_id: int
+        self, session_game_id: int, tg_id: int
     ) -> PlayerModel | None:
         async with await self.app.database.get_session() as session:
             stmt = (
@@ -175,7 +211,7 @@ class SessionGameAccessor(BaseAccessor):
                 .join(UserModel)
                 .where(
                     PlayerModel.session_id == session_game_id,
-                    UserModel.username_id_tg == user_id,
+                    UserModel.username_id_tg == tg_id,
                 )
             )
             result = await session.execute(stmt)
