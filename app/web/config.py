@@ -41,10 +41,13 @@ class Config:
     database: DatabaseConfig | None = None
 
 
-def setup_config(app: "Application", config_path: str):
+def get_config_to_dict(config_path: str) -> dict:
     with open(config_path, "r") as f:
-        raw_config = yaml.safe_load(f)
+        return yaml.safe_load(f)
 
+
+def setup_config(app: "Application", config_path: str):
+    raw_config = get_config_to_dict(config_path=config_path)
     app.config = Config(
         session=SessionConfig(
             key=raw_config["session"]["key"],

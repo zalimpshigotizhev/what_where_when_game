@@ -8,14 +8,14 @@ class ThemeSchema(Schema):
 
 class AnswerSchema(Schema):
     title = fields.Str(required=True)
-    is_correct = fields.Bool(required=True)
+    description = fields.Str(required=False)
 
 
 class QuestionSchema(Schema):
     id = fields.Int(required=False)
     title = fields.Str(required=True)
     theme_id = fields.Int(required=True)
-    answers = fields.Nested(AnswerSchema, many=True, required=True)
+    true_answer = fields.Nested(AnswerSchema, required=True)
 
 
 class ThemeListSchema(Schema):

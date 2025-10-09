@@ -1,87 +1,56 @@
-version: "3.9"
+version: '3.8'
 
 services:
-
-  postgres:
-    container_name: postgres
-    image: postgres:latest
-    command:
-      - "postgres"
-      - "-c"
-      - "max_connections=50"
-      - "-c"
-      - "shared_buffers=1GB"
-      - "-c"
-      - "effective_cache_size=4GB"
-      - "-c"
-      - "work_mem=16MB"
-      - "-c"
-      - "maintenance_work_mem=512MB"
-      - "-c"
-      - "random_page_cost=1.1"
-      - "-c"
-      - "temp_file_limit=10GB"
-      - "-c"
-      - "log_min_duration_statement=200ms"
-      - "-c"
-      - "idle_in_transaction_session_timeout=10s"
-      - "-c"
-      - "lock_timeout=1s"
-      - "-c"
-      - "statement_timeout=60s"
-      - "-c"
-      - "shared_preload_libraries=pg_stat_statements"
-      - "-c"
-      - "pg_stat_statements.max=10000"
-      - "-c"
-      - "pg_stat_statements.track=all"
-    environment:
-      POSTGRES_DB: "kts"
-      POSTGRES_USER: "kts_user"
-      POSTGRES_PASSWORD: "kts_pass"
-      PGDATA: "/var/lib/postgresql/data/pgdata"
-    volumes:
-      - ./postgres/data:/var/lib/postgresql/data
+  app:
+    build: .
+    container_name: python_app
     ports:
-      - 5432:5432
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://kts_user:kts_pass@postgres:5432/kts
     networks:
-      - kts-bridge
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kts_user -d kts"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - db_network
+    volumes:
+      - ./app/:/project/app
+    depends_on:
+      - postgres
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 4G
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: kts
+      POSTGRES_USER: kts_user
+      POSTGRES_PASSWORD: kts_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - db_network
+    restart: unless-stopped
 
   pgadmin:
-    container_name: pgadmin_container
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:7
+    container_name: pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: "zalim@zalim.ru"
-      PGADMIN_DEFAULT_PASSWORD: "zalimon2"
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    volumes:
-      - ./pgadmin:/var/lib/pgadmin
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
+      - "80:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     networks:
-      - kts-bridge
+      - db_network
+    restart: unless-stopped
     depends_on:
       - postgres
 
+volumes:
+  postgres_data:
+  pgadmin_data:
 
 networks:
-  kts-bridge:
+  db_network:
     driver: bridge

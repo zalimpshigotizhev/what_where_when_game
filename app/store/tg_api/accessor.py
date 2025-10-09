@@ -53,7 +53,7 @@ class TelegramApiAccessor(BaseAccessor):
             )
         ) as response:
             result = await response.json()
-            self.logger.info(result)
+            # self.logger.info(result)
 
             if result.get("ok") and result.get("result"):
                 updates_dicts = result["result"]
@@ -112,7 +112,7 @@ class TelegramApiAccessor(BaseAccessor):
         ) as response:
             data = await response.json()
 
-            self.logger.info(data)
+            # self.logger.info(data)
 
             return MessageTG.from_dict(data.get("result"))
 

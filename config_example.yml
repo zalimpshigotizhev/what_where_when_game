@@ -1,5 +1,5 @@
 session:
-  key: seesion_key
+  key: session_key
 admin:
   email: email
   password: password

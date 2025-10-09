@@ -1,11 +1,12 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
+import yaml
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.store.database.database import constr_config_var
 from app.store.database.sqlalchemy_base import BaseModel
 from app.admin.models import *
 from app.bot.user.models import *
@@ -33,7 +34,30 @@ target_metadata = BaseModel.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-config.set_main_option("sqlalchemy.url", constr_config_var())
+
+file_config = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "../config.yml"
+            )
+
+def get_url_for_alembic(url_config: str) -> str:
+    with open(url_config, "r") as f:
+        raw_config = yaml.safe_load(f)
+
+    db_config = raw_config.get("database")
+    user = db_config.get("user")
+    password = db_config.get("password")
+    host = db_config.get("host")
+    port = db_config.get("port")
+    database = db_config.get("database")
+    print(db_config)
+    return (
+        f"postgresql+asyncpg://"
+        f"{user}:{password}@"
+        f"{host}:{port}"
+        f"/{database}"
+    )
+
+config.set_main_option("sqlalchemy.url", get_url_for_alembic(file_config))
 
 
 def run_migrations_offline() -> None:

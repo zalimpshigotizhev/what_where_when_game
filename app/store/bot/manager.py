@@ -1,12 +1,16 @@
 import typing
 from logging import getLogger
 
-from app.store.bot.gamebot import (
+from app.store.bot.gamebot.are_ready_state import (
     AreReadyFirstRoundPlayersProcessGameBot,
-    MainGameBot,
+)
+from app.store.bot.gamebot.main_state import MainGameBot
+from app.store.bot.gamebot.quest_disscution_state import (
     QuestionDiscussionProcessGameBot,
-    VerdictCaptain,
-    WaitAnswer,
+)
+from app.store.bot.gamebot.verdict_captain_state import VerdictCaptain
+from app.store.bot.gamebot.wait_answer_state import WaitAnswer
+from app.store.bot.gamebot.wait_players_state import (
     WaitingPlayersProcessGameBot,
 )
 from app.store.tg_api.dataclasses import UpdateABC
@@ -38,7 +42,6 @@ class BotManager:
                 self._handlers.extend(state_handler.handlers)
         return self._handlers
 
-    # TODO: СДелать Мидлварь для обработки исключений
     async def handle_updates(self, updates: list[UpdateABC]):
         for update in updates:
             curr_state = await self.app.store.fsm.get_state(

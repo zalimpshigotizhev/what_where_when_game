@@ -37,7 +37,13 @@ class TimerManager:
 
         # Создаем и запускаем таймер
         self.app.logger.info("Создаем таймер %s", created_key)
-        timer = Timer(timeout=timeout, callback=callback, **kwargs)
+        timer = Timer(
+            app=self.app,
+            type_timer=timer_type,
+            timeout=timeout,
+            callback=callback,
+            **kwargs,
+        )
 
         if self.timers.get(str(chat_id)) is None:
             self.timers[str(chat_id)] = {}

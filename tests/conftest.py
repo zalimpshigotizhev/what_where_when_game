@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.store.bot.gamebot import BotBase
+from app.store.bot.gamebot.base import BotBase
 
 
 @pytest.fixture(scope="session")
