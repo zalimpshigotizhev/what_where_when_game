@@ -31,22 +31,9 @@ class GameProcessedError(Exception):
     pass
 
 
-MAX_PLAYERS = 6
-MIN_PLAYERS = 1
-# 1 минута
-ARE_READY_TIMEOUT = 60
-# 1 минута
-QUESTION_DISCUTION_TIMEOUT = 1
-# 2 минуты
-VERDICT_CAPTAIN_TIMEOUT = 60
-
-MAX_SCORE = 2
-
-
 class BotBase:
     def __init__(self, app: "Application"):
         self.app = app
-        self.unnecessary_messages: dict[int, list[int]] = {}
         self.handlers: list | None = None
         self._add_handlers_in_list()
 
@@ -132,6 +119,9 @@ class BotBase:
         curr_sess = await self.game_store.get_active_session_by_chat_id(
             chat_id=current_chat_id, inload_players=True
         )
+        if not curr_sess or curr_sess.status != StatusSession.PROCESSING:
+            self.app.logger.warning("Эта игра прекращена или в ожидании ")
+            return
         players: list[PlayerModel] = curr_sess.players
         players_is_active_is_ready = []
 
@@ -150,7 +140,7 @@ class BotBase:
             else:
                 players_is_active_is_ready.append(player)
 
-        if len(players_is_active_is_ready) < MIN_PLAYERS:
+        if len(players_is_active_is_ready) < consts.MIN_PLAYERS:
             mess = await self.app.store.tg_api.send_message(
                 chat_id=current_chat_id, text=consts.NOT_ENOUGH_PLAYERS_MESSAGE
             )
@@ -188,7 +178,7 @@ class BotBase:
 
         self.app.store.timer_manager.start_timer(
             chat_id=current_chat_id,
-            timeout=QUESTION_DISCUTION_TIMEOUT,
+            timeout=consts.QUESTION_DISCUTION_TIMEOUT,
             callback=self.verdict_captain,
             timer_type="1_minute_question_discution",
             # kwargs
@@ -219,7 +209,7 @@ class BotBase:
         # отвечающего - игра отменится автоматически.
         self.app.store.timer_manager.start_timer(
             chat_id=current_chat_id,
-            timeout=VERDICT_CAPTAIN_TIMEOUT,
+            timeout=consts.VERDICT_CAPTAIN_TIMEOUT,
             callback=self.cancel_game,
             timer_type="2_minute_verdict_captain",
             # kwargs
@@ -241,7 +231,7 @@ class BotBase:
             ),
         )
 
-        if score.get("experts") == MAX_SCORE:
+        if score.get("experts") == consts.MAX_SCORE:
             await self.app.store.tg_api.send_message(
                 chat_id=chat_id, text=consts.YOUR_TEAM_WIN
             )
@@ -251,7 +241,7 @@ class BotBase:
                 new_status=StatusSession.COMPLETED,
             )
 
-        elif score.get("bot") == MAX_SCORE:
+        elif score.get("bot") == consts.MAX_SCORE:
             await self.app.store.tg_api.send_message(
                 chat_id=chat_id, text=consts.YOUR_TEAM_FAILE
             )
@@ -321,7 +311,7 @@ class BotBase:
 
         self.app.store.timer_manager.start_timer(
             chat_id=chat_id,
-            timeout=ARE_READY_TIMEOUT,
+            timeout=consts.ARE_READY_TIMEOUT,
             callback=self.ask_question,
             timer_type="30_second_are_ready",
             # kwargs
@@ -699,6 +689,7 @@ class AreReadyFirstRoundPlayersProcessGameBot(BotBase):
             for player in curr_sess.players
             if player.is_active is True and player.is_ready
         ]
+        # TODO: Проверить добавляется ли дважды
         are_ready_connected_user_ids.append(user_id)
 
         await asyncio.sleep(0.1)

@@ -1,3 +1,14 @@
+MAX_PLAYERS = 6
+MIN_PLAYERS = 1
+# 1 минута
+ARE_READY_TIMEOUT = 60
+# 1 минута
+QUESTION_DISCUTION_TIMEOUT = 1
+# 2 минуты
+VERDICT_CAPTAIN_TIMEOUT = 60
+
+MAX_SCORE = 2
+
 RULES_INFO = (
     "Игра проходит между командой «Знатоков» (от 2 до 6 человек) и ботом. "
     "Знатоки должны за ограниченное время найти ответ на вопрос, "
@@ -21,6 +32,7 @@ RUPOR_SCORE = "*Счет*\n" "Знатоки -> *{experts}*\n" "Бот -> *{bot}
 NOT_PLAYER_CHOICE_CAP = (
     "К сожалению ответил не тот игрок, " "которого выбрал капитан."
 )
+MESSAGE_FOR_PRIVAT = "Добавьте меня в группу"
 DONT_EXIST_GAME_IN_CHAT = (
     "*Игра не была запущена в этом чате.* \n"
     "Запустите с помощью команды:\n"
