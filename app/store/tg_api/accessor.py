@@ -1,4 +1,5 @@
 import json
+from pprint import pprint
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urljoin
 
@@ -21,7 +22,7 @@ class TelegramApiAccessor(BaseAccessor):
         super().__init__(app, *args, **kwargs)
         self.session: ClientSession | None = None
         self.poller: Poller | None = None
-        self.timeout = 60
+        self.timeout = 20
         self.offset = 0
         self.server: str = f"{API_PATH}bot{self.app.config.bot.token}/"
 
@@ -53,7 +54,7 @@ class TelegramApiAccessor(BaseAccessor):
             )
         ) as response:
             result = await response.json()
-            # self.logger.info(result)
+            self.logger.info(result)
 
             if result.get("ok") and result.get("result"):
                 updates_dicts = result["result"]
@@ -77,6 +78,7 @@ class TelegramApiAccessor(BaseAccessor):
                         updates_datas.append(data)
 
                     elif "callback_query" in update:
+                        pprint(update["callback_query"])
                         callback = CallbackTG.from_dict(
                             update["callback_query"]
                         )

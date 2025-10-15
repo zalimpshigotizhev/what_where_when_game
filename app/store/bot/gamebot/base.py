@@ -2,10 +2,8 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from app.bot.game.models import (
-    GameState,
     PlayerModel,
-    RoundModel,
-    StatusSession,
+    RoundModel, StatusSession, GameState,
 )
 from app.quiz.models import QuestionModel
 from app.store.bot import consts
@@ -15,6 +13,8 @@ from app.store.bot.keyboards import (
 
 if TYPE_CHECKING:
     from app.web.app import Application
+    from app.store import GameSessionAccessor
+
 
 
 class GameProcessedError(Exception):
@@ -32,7 +32,7 @@ class BotBase:
         return self.app.store.rounds
 
     @property
-    def game_store(self):
+    def game_store(self) -> 'GameSessionAccessor':
         return self.app.store.game_session
 
     @property
@@ -105,18 +105,24 @@ class BotBase:
         :param session_id SessionModel.id активной сессии.
         """
         await self.deleted_unnecessary_messages(chat_id=current_chat_id)
-        # Уничтожить всех кто не был готов к вопросу
         curr_sess = await self.game_store.get_active_session_by_chat_id(
             chat_id=current_chat_id, inload_players=True
         )
         if not curr_sess or curr_sess.status != StatusSession.PROCESSING:
-            self.app.logger.warning("Эта игра прекращена или в ожидании ")
+            await self.app.store.tg_api.send_message(
+                chat_id=current_chat_id,
+                text=("*У вас нет активной игровой сессии.*\n"
+                     "Начните её /start")
+            )
+            self.app.logger.error("Эта игра прекращена или в ожидании")
             return
+
+        # Уничтожить всех кто не был готов к вопросу
         players: list[PlayerModel] = curr_sess.players
         players_is_active_is_ready = []
 
         for player in players:
-            if player.is_active is True and player.is_ready is False:
+            if player.is_active is False or player.is_ready is False:
                 if player.is_captain:
                     await self.cancel_game(
                         current_chat_id=current_chat_id, session_id=curr_sess.id
@@ -124,23 +130,16 @@ class BotBase:
                     return
                 await self.player_store.set_player_is_active(
                     session_id=curr_sess.id,
-                    id_tg=player.user.username_tg,
+                    id_tg=player.user.id_tg,
                     new_active=False,
                 )
             else:
                 players_is_active_is_ready.append(player)
 
         if len(players_is_active_is_ready) < consts.MIN_PLAYERS:
-            mess = await self.app.store.tg_api.send_message(
-                chat_id=current_chat_id, text=consts.NOT_ENOUGH_PLAYERS_MESSAGE
-            )
-            await self.add_message_in_unnecessary_messages(
-                chat_id=current_chat_id, message_id=mess.message_id
-            )
-
-            await asyncio.sleep(2)
             await self.cancel_game(
-                current_chat_id=current_chat_id, session_id=curr_sess.id
+                current_chat_id=current_chat_id, session_id=curr_sess.id,
+                text=consts.ENOUGH_PLAYERS
             )
             return
 
@@ -176,10 +175,23 @@ class BotBase:
             session_id=session_id,
         )
 
-    async def verdict_captain(self, current_chat_id: int, session_id: int):
+    async def verdict_captain(
+            self,
+            current_chat_id: int,
+            session_id: int,
+    ):
+        """Переходная функция для опроса капитана."""
         curr_sess = await self.game_store.get_active_session_by_chat_id(
             chat_id=current_chat_id, inload_players=True
         )
+        if curr_sess is None:
+            await self.app.store.tg_api.send_message(
+                chat_id=current_chat_id,
+                text=("*У вас нет активной игровой сессии.*\n"
+                     "Начните её /start")
+            )
+            self.app.logger.error("Эта игра прекращена или в ожидании")
+            return
 
         players_for_answer = "\n".join(
             [f"· @{player.user.username_tg}" for player in curr_sess.players]
@@ -223,9 +235,6 @@ class BotBase:
         )
 
         if score.get("experts") == consts.MAX_SCORE:
-            await self.app.store.tg_api.send_message(
-                chat_id=chat_id, text=consts.YOUR_TEAM_WIN
-            )
             await self.cancel_game(
                 session_id=session_id,
                 current_chat_id=chat_id,
@@ -235,10 +244,6 @@ class BotBase:
             return False
 
         if score.get("bot") == consts.MAX_SCORE:
-            await self.app.store.tg_api.send_message(
-                chat_id=chat_id, text=consts.YOUR_TEAM_FAILE
-            )
-
             await self.cancel_game(
                 session_id=session_id,
                 current_chat_id=chat_id,
@@ -266,7 +271,7 @@ class BotBase:
 
         mess = await self.app.store.tg_api.send_message(
             chat_id=current_chat_id,
-            text=text or consts.ARE_YOU_READY_NEXT_QUEST,
+            text=text,
             reply_markup=are_ready_keyboard,
         )
         await self.add_message_in_unnecessary_messages(

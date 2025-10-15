@@ -5,7 +5,7 @@ from app.store.bot.utils import (
     TypeFilter,
     filtered_handler,
 )
-from app.store.tg_api.dataclasses import CallbackTG, MessageTG
+from app.store.tg_api.dataclasses import MessageTG
 
 
 class QuestionDiscussionProcessGameBot(BotBase):
@@ -13,8 +13,24 @@ class QuestionDiscussionProcessGameBot(BotBase):
         TypeFilter(MessageTG), StateFilter(GameState.QUESTION_DISCUTION)
     )
     async def handle_question_discution(
-        self, callback: CallbackTG, context: GameState | None
+        self, message: MessageTG, context: GameState | None
     ) -> None:
         # Таймер запущен.
         # Даем возможность обсудить вопрос среди игроков.
         pass
+
+    # TODO: Добавить Хэндлер Который уничтожает сообщения
+    # TODO: Добавить FilterSet для filtered_handler которая срабатывает при определенных State
+    # @filtered_handler(
+    #     TypeFilter(MessageTG)
+    # )
+    # async def handle_question_discution(
+    #     self, message: MessageTG, context: GameState | None
+    # ) -> None:
+    #     # Таймер запущен.
+    #     # Даем возможность обсудить вопрос среди игроков.
+    #     await self.app.store.tg_api.delete_message(
+    #         chat_id=message.chat.id_,
+    #         message_id=message.message_id
+    #     )
+    #     pass

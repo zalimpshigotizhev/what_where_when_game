@@ -3,11 +3,9 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from app.base.base_accessor import BaseAccessor
 from app.bot.game.models import (
-    GameState,
     RoundModel,
     SessionModel,
-    StateModel,
-    StatusSession,
+    StateModel, GameState, StatusSession,
 )
 
 

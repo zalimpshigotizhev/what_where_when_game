@@ -9,10 +9,10 @@ class UserStatsListView(View):
     @querystring_schema(UserId)
     @response_schema(UserInfo)
     async def get(self):
-        user_idtg = self.request.query.get("username_tg") or None
+        username_tg = self.request.query.get("username_tg") or None
 
         user_stats = await self.store.users.get_player_stats_by_username(
-            user_idtg
+            username_tg
         )
 
         return json_response(data=UserInfo().dump(user_stats))

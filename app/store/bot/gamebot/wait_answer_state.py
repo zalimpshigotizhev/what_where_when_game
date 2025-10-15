@@ -1,6 +1,6 @@
 import asyncio
 
-from app.bot.game.models import GameState, PlayerModel, RoundModel
+from app.bot.game.models import PlayerModel, RoundModel, GameState
 from app.quiz.models import QuestionModel
 from app.store.bot import consts
 from app.store.bot.gamebot.base import BotBase
@@ -38,7 +38,7 @@ class WaitAnswer(BotBase):
         self.app.store.timer_manager.cancel_timer(
             chat_id=chat_id, timer_type="30_second_for_answer"
         )
-        if player.user.username_tg != message.from_.username:
+        if player.user.id_tg != message.from_.id_:
             await self.is_answer_false(
                 session_id=curr_sess.id,
                 current_chat_id=chat_id,
@@ -49,7 +49,7 @@ class WaitAnswer(BotBase):
             return
 
         is_correct_answer = question.is_answer_is_true(message.text)
-        if question.true_answer.description:
+        if is_correct_answer and question.true_answer.description:
             await self.app.store.tg_api.send_message(
                 chat_id=chat_id,
                 text=consts.DESCRIPTION_ANSWER.format(
@@ -59,7 +59,7 @@ class WaitAnswer(BotBase):
                 ),
                 parse_mode="MarkdownV2",
             )
-        await asyncio.sleep(3)
+            await asyncio.sleep(3)
 
         if is_correct_answer:
             await self.app.store.tg_api.send_message(

@@ -2,7 +2,7 @@ import typing
 from logging import getLogger
 
 from app.store.bot.gamebot.are_ready_state import (
-    AreReadyFirstRoundPlayersProcessGameBot,
+    AreReadyNextRoundPlayersProcessGameBot,
 )
 from app.store.bot.gamebot.main_state import MainGameBot
 from app.store.bot.gamebot.quest_disscution_state import (
@@ -25,7 +25,7 @@ class BotManager:
         self.states_handler = [
             MainGameBot(self.app),
             WaitingPlayersProcessGameBot(self.app),
-            AreReadyFirstRoundPlayersProcessGameBot(self.app),
+            AreReadyNextRoundPlayersProcessGameBot(self.app),
             QuestionDiscussionProcessGameBot(self.app),
             VerdictCaptain(self.app),
             WaitAnswer(self.app),

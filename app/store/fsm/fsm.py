@@ -4,10 +4,8 @@ from abc import ABC, abstractmethod
 from sqlalchemy import select
 
 from app.bot.game.models import (
-    GameState,
     SessionModel,
-    StateModel,
-    StatusSession,
+    StateModel, GameState, StatusSession
 )
 
 if typing.TYPE_CHECKING:
@@ -19,15 +17,15 @@ db_states = {1213: {"state": GameState.INACTIVE, "data": {}}}
 
 class StateStorageABC(ABC):
     @abstractmethod
-    def get_state(self, chat_id: int):
+    async def get_state(self, chat_id: int):
         pass
 
     @abstractmethod
-    def set_state(self, chat_id: int, new_state: GameState):
+    async def set_state(self, chat_id: int, new_state: GameState):
         pass
 
     @abstractmethod
-    def update_data(self, chat_id: int, **kwargs):
+    async def update_data(self, chat_id: int, **kwargs) -> dict:
         pass
 
     @abstractmethod
@@ -35,7 +33,7 @@ class StateStorageABC(ABC):
         pass
 
     @abstractmethod
-    def clear_data(self, chat_id: int):
+    async def clear_data(self, chat_id: int):
         pass
 
 
@@ -66,6 +64,7 @@ class MemoryStorageABC(StateStorageABC, BaseStorage):
             query = self.set_state(chat_id, GameState.INACTIVE)
 
         query["data"] = kwargs
+
 
     def get_data(self, chat_id: int):
         query = db_states.get(chat_id)
@@ -114,7 +113,11 @@ class PostgresAsyncStorage(StateStorageABC, BaseStorage):
             state.current_state = new_state
             await session.commit()
 
-    async def update_data(self, chat_id: int, new_data: dict) -> None:
+    async def update_data(
+            self,
+            chat_id: int,
+            new_data: dict
+    ) -> None:
         async with await self.app.database.get_session() as session:
             stmt = (
                 select(StateModel)

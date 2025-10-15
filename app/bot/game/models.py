@@ -1,11 +1,11 @@
-import enum
-
 from sqlalchemy import JSON, BigInteger, Boolean, Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Enum
 
 from app.bot.user.models import UserModel  # noqa: F401
 from app.store.database.sqlalchemy_base import BaseModel, TimedBaseMixin
+
+import enum
 
 
 class GameState(enum.Enum):
@@ -25,7 +25,6 @@ class StatusSession(enum.Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
-
 
 class StateModel(TimedBaseMixin, BaseModel):
     __tablename__ = "states"

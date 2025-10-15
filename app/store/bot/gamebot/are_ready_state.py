@@ -12,7 +12,7 @@ from app.store.bot.utils import (
 from app.store.tg_api.dataclasses import CallbackTG
 
 
-class AreReadyFirstRoundPlayersProcessGameBot(BotBase):
+class AreReadyNextRoundPlayersProcessGameBot(BotBase):
     @filtered_handler(
         TypeFilter(CallbackTG),
         CallbackDataFilter("ready"),
@@ -28,6 +28,12 @@ class AreReadyFirstRoundPlayersProcessGameBot(BotBase):
         curr_sess = await self.game_store.get_active_session_by_chat_id(
             chat_id=chat_id, inload_players=True
         )
+        if curr_sess is None:
+            await self.app.store.tg_api.answer_callback_query(
+                callback_query_id=callback.id_,
+                text=consts.DONT_EXIST_GAME_IN_CHAT,
+            )
+            return
 
         dict_idtg_to_players = {
             player.user.id_tg: player

@@ -1,6 +1,6 @@
 from app.bot.game.models import GameState
 from app.store.bot import consts
-from app.store.bot.consts import MIN_PLAYERS, PLAYER_JOINED
+from app.store.bot.consts import MIN_PLAYERS, PLAYER_JOINED, MAX_PLAYERS
 from app.store.bot.gamebot.base import BotBase
 from app.store.bot.utils import (
     CallbackDataFilter,
@@ -51,6 +51,13 @@ class WaitingPlayersProcessGameBot(BotBase):
             )
             return
 
+        elif len(active_connected_user_ids) >= MAX_PLAYERS:
+            await self.app.store.tg_api.answer_callback_query(
+                callback_query_id=callback.id_,
+                text="Набралось достаточное кол-ство человек",
+            )
+            return
+
         if user_id in not_active_connected_user_ids:
             await self.player_store.set_player_is_active(
                 session_id=curr_sess.id, id_tg=user_id, new_active=True
@@ -61,6 +68,7 @@ class WaitingPlayersProcessGameBot(BotBase):
                 id_tg=user_id,
                 username_tg=callback.from_.username,
             )
+
         mess = await self.app.store.tg_api.send_message(
             chat_id=chat_id,
             text=PLAYER_JOINED.format(username=callback.from_.username),

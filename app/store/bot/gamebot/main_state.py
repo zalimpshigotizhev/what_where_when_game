@@ -36,8 +36,8 @@ class MainGameBot(BotBase):
             if player.is_active
         }
         player = dict_idtg_to_players.get(user_id)
-        if player is not None:
-            if player.is_captain:
+        if context == GameState.INACTIVE or player is not None:
+            if context == GameState.INACTIVE or player.is_captain:
                 await self.cancel_game(
                     current_chat_id=chat_id, session_id=active_sess.id
                 )
@@ -53,31 +53,29 @@ class MainGameBot(BotBase):
     ) -> None:
         """Обрабатывает сообщения в личных чатах"""
         chat_id = command.chat.id_
+        text = consts.WELCOME_TO_GAME
+        reply = main_keyboard
 
         active_sess = await self.game_store.get_active_session_by_chat_id(
             chat_id=chat_id
         )
-        if active_sess is not None:
-            if active_sess.status == StatusSession.PROCESSING:
-                mess = await self.app.store.tg_api.send_message(
-                    chat_id=chat_id,
-                    text=consts.EXIST_GAME_CAN_EXIT,
-                )
-                await self.add_message_in_unnecessary_messages(
-                    chat_id=chat_id, message_id=mess.message_id
-                )
-                return
-
-        else:
+        if active_sess is None:
             await self.game_store.create_session(
-                chat_id=chat_id,
-                status=StatusSession.PENDING,
-            )
+                    chat_id=chat_id,
+                    status=StatusSession.PENDING,
+                )
+
+        elif active_sess.status == StatusSession.PENDING:
+            pass
+
+        elif active_sess.status == StatusSession.PROCESSING:
+            text = consts.EXIST_GAME_CAN_EXIT
+            reply = None
 
         mess = await self.app.store.tg_api.send_message(
             chat_id=chat_id,
-            text=consts.WELCOME_TO_GAME,
-            reply_markup=main_keyboard,
+            text=text,
+            reply_markup=reply,
         )
         await self.add_message_in_unnecessary_messages(
             chat_id=chat_id, message_id=mess.message_id
@@ -93,7 +91,11 @@ class MainGameBot(BotBase):
         curr_sess = await self.game_store.get_active_session_by_chat_id(
             chat_id=chat_id,
         )
-
+        if curr_sess is None:
+            await self.app.store.tg_api.answer_callback_query(
+                callback_query_id=callback.id_, text=consts.THIS_GAME_COMPLETED
+            )
+            return
         if curr_sess.status == StatusSession.PROCESSING:
             await self.app.store.tg_api.answer_callback_query(
                 callback_query_id=callback.id_, text=consts.GAME_IS_EXIST
@@ -107,7 +109,7 @@ class MainGameBot(BotBase):
             is_captain=True,
         )
 
-        await self.deleted_unnecessary_messages(chat_id)
+        await self.deleted_unnecessary_messages(chat_id=chat_id)
 
         await self.app.store.tg_api.answer_callback_query(
             callback_query_id=callback.id_,
@@ -139,7 +141,7 @@ class MainGameBot(BotBase):
     ) -> None:
         """Обрабатывает сообщения в личных чатах"""
         bot_message = await self.app.store.tg_api.send_message(
-            callback.chat.id_, consts.RULES_INFO
+            chat_id=callback.chat.id_, text=consts.RULES_INFO
         )
         await self.add_message_in_unnecessary_messages(
             chat_id=callback.chat.id_, message_id=bot_message.message_id
@@ -149,9 +151,29 @@ class MainGameBot(BotBase):
     async def handle_show_rating(
         self, callback: CallbackTG, context: GameState | None
     ) -> None:
-        """Обрабатывает сообщения в личных чатах"""
+        """Выдает рейтинг чата"""
+        completed_sessions = await self.game_store.get_completed_sessions(
+            chat_id=callback.chat.id_
+        )
+        if completed_sessions is None or len(completed_sessions) == 0:
+            experts = 0
+            bot = 0
+
+        else:
+            last_game_sess = completed_sessions[0]
+            score: dict = await self.game_store.gen_score(
+                session_id=last_game_sess.id
+            )
+            experts = score.get("experts")
+            bot = score.get("bot")
+
         bot_message = await self.app.store.tg_api.send_message(
-            callback.chat.id_, consts.RATING_INFO
+            callback.chat.id_,
+            consts.RATING_INFO.format(
+                count=len(completed_sessions),
+                experts=experts,
+                bot=bot,
+            ),
         )
         await self.add_message_in_unnecessary_messages(
             chat_id=callback.chat.id_, message_id=bot_message.message_id
