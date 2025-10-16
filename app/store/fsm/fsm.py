@@ -4,8 +4,10 @@ from abc import ABC, abstractmethod
 from sqlalchemy import select
 
 from app.bot.game.models import (
+    GameState,
     SessionModel,
-    StateModel, GameState, StatusSession
+    StateModel,
+    StatusSession,
 )
 
 if typing.TYPE_CHECKING:
@@ -65,7 +67,6 @@ class MemoryStorageABC(StateStorageABC, BaseStorage):
 
         query["data"] = kwargs
 
-
     def get_data(self, chat_id: int):
         query = db_states.get(chat_id)
         if query is None:
@@ -113,11 +114,7 @@ class PostgresAsyncStorage(StateStorageABC, BaseStorage):
             state.current_state = new_state
             await session.commit()
 
-    async def update_data(
-            self,
-            chat_id: int,
-            new_data: dict
-    ) -> None:
+    async def update_data(self, chat_id: int, new_data: dict) -> None:
         async with await self.app.database.get_session() as session:
             stmt = (
                 select(StateModel)

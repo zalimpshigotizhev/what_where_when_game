@@ -1,7 +1,9 @@
 import pytest
 
 from app.bot.game.models import GameState
-from app.store.bot.gamebot.quest_disscution_state import QuestionDiscussionProcessGameBot
+from app.store.bot.gamebot.quest_disscution_state import (
+    QuestionDiscussionProcessGameBot,
+)
 
 
 class TestQuestionDiscussionState:
@@ -19,13 +21,11 @@ class TestQuestionDiscussionState:
 
     @pytest.mark.asyncio
     async def test_handle_question_discution(
-            self,
-            quest_diss,
-            message,
+        self,
+        quest_diss,
+        message,
     ):
-        """
-        Тест на
-        """
+        """Тест на то что ничего не происходит"""
         await quest_diss.handle_question_discution(
             message, context=GameState.QUESTION_DISCUTION
         )

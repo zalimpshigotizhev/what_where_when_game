@@ -4,15 +4,15 @@ import pytest
 
 from app.bot.game.models import GameState
 from app.store.bot import consts
-from app.store.bot.gamebot.wait_players_state import WaitingPlayersProcessGameBot
+from app.store.bot.gamebot.wait_players_state import (
+    WaitingPlayersProcessGameBot,
+)
 
 
 class TestWaitingPlayersProcessGameBot:
-
     @pytest.fixture
     def wait_p_state(self, mock_app):
-        wait_player_state = WaitingPlayersProcessGameBot(mock_app)
-        return wait_player_state
+        return WaitingPlayersProcessGameBot(mock_app)
 
     @pytest.mark.asyncio
     async def test_initialization(self, bot_base, mock_app):
@@ -23,16 +23,16 @@ class TestWaitingPlayersProcessGameBot:
         assert bot_base.game_store == bot_base.app.store.game_session
 
     async def test_handle_join_game_dont_exist_game(
-            self,
-            bot_base,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback
+        self,
+        bot_base,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
     ):
-        """
-        Тест на то, что игры не существует.
+        """Нажимается кнопка "Присоединиться к игре".
+        Но этой игры уже не существует.
         """
         callback.data = "join_game"
         wait_p_state.game_store.get_active_session_by_chat_id = AsyncMock(
@@ -48,24 +48,21 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_join_game_enough_players(
-            self,
-            bot_base,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player7
+        self,
+        bot_base,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player7,
     ):
-        """
-        Тест на то, что максимальное кол-ство игроков
-        уже подключена к сессии и кто-то пытается
-        подключиться.
+        """Нажимается кнопка "Присоединиться к игре".
+        Уже набралось достаточное количество игроков
         """
         callback.data = "join_game"
         session_game.players = full_players
-
 
         wait_p_state.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
@@ -80,28 +77,24 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_join_game_already_joined(
-            self,
-            bot_base,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player6
+        self,
+        bot_base,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player6,
     ):
-        """
-        Тест на то, что игрок, который пытается присоединиться к игре,
-        уже подключен к сессии
+        """Нажимается кнопка "Присоединиться к игре".
+        Но игрок уже подключен к сессии.
         """
         callback.data = "join_game"
         callback.from_.username = player6.user.username_tg
         callback.from_.id_ = player6.user.id_tg
 
-
-
         session_game.players = full_players
-
 
         wait_p_state.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
@@ -116,18 +109,18 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_join_game_joined_is_not_active(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player6
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player6,
     ):
-        """
-        Тест на то, что игрок, который пытается присоединиться к игре, но
-        есть PlayerModel.is_active == False, в таком случае
+        """Нажимается кнопка "Присоединиться к игре".
+        Игрок не активный, то есть, он уже нажимал закончить игру и
+        выходил из сессии.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         callback.data = "join_game"
@@ -150,12 +143,10 @@ class TestWaitingPlayersProcessGameBot:
         )
 
         wait_p_state.app.store.tg_api.answer_callback_query.assert_called_once_with(
-            callback_query_id=callback.id_,
-            text=consts.YOU_PLAYER_WITH_GAME
+            callback_query_id=callback.id_, text=consts.YOU_PLAYER_WITH_GAME
         )
         wait_p_state.player_store.set_player_is_active.assert_called_once_with(
-            session_id=session_id,
-            id_tg=callback.from_.id_, new_active=True
+            session_id=session_id, id_tg=callback.from_.id_, new_active=True
         )
         wait_p_state.app.store.tg_api.send_message.assert_called_once_with(
             chat_id=chat_id,
@@ -163,21 +154,17 @@ class TestWaitingPlayersProcessGameBot:
         )
         wait_p_state.add_message_in_unnecessary_messages.assert_called()
 
-
     async def test_handle_join_game(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player7
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player7,
     ):
-        """
-        Тест на то, что игрок, который пытается присоединиться к игре и
-        создается PlayerModel
-        """
+        """Нажимается кнопка "Присоединиться к игре"."""
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         callback.data = "join_game"
         callback.from_.username = player7.user.username_tg
@@ -197,8 +184,7 @@ class TestWaitingPlayersProcessGameBot:
         )
 
         wait_p_state.app.store.tg_api.answer_callback_query.assert_called_once_with(
-            callback_query_id=callback.id_,
-            text=consts.YOU_PLAYER_WITH_GAME
+            callback_query_id=callback.id_, text=consts.YOU_PLAYER_WITH_GAME
         )
         wait_p_state.player_store.create_player.assert_called_once_with(
             session_id=session_id,
@@ -212,18 +198,17 @@ class TestWaitingPlayersProcessGameBot:
         wait_p_state.add_message_in_unnecessary_messages.assert_called()
 
     async def test_handle_start_game_from_captain_dont_exist_session(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player7
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player7,
     ):
-        """
-        Тест на то, что игрок, который пытается присоединиться к игре,
-        уже подключен к сессии
+        """Нажимается кнопка "Начать игру".
+        Не существует игра
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         callback.data = "start_game_from_captain"
@@ -241,18 +226,17 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_start_game_from_captain_dont_paricipant(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player7
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player7,
     ):
-        """
-        Тест на то, что игрок, который пытается присоединиться к игре,
-        уже подключен к сессии
+        """Нажимается кнопка "Начать игру".
+        Нажимает не участник.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         callback.data = "start_game_from_captain"
@@ -273,27 +257,23 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_start_game_from_captain_dont_enough(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            player1,
-
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        player1,
     ):
-        """
-        Тест на то, что капитан, но участников меньше чем минимальное
-        кол-ство игроков
+        """Нажимается кнопка "Начать игру".
+        Недостаточно игроков.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         callback.data = "start_game_from_captain"
         callback.from_.username = player1.user.username_tg
         callback.from_.id_ = player1.user.id_tg
 
-        session_game.players = [
-            player1
-        ]
+        session_game.players = [player1]
         wait_p_state.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
         )
@@ -307,19 +287,17 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_start_game_from_captain_just_player(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player5,
-
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player5,
     ):
-        """
-        Тест на то, что капитан, но участников меньше чем минимальное
-        кол-ство игроков
+        """Нажимается кнопка "Начать игру".
+        Нажимает не капитан.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         callback.data = "start_game_from_captain"
@@ -340,19 +318,17 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_start_game_from_captain(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player1,
-
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player1,
     ):
-        """
-        Тест на то, что капитан, но участников меньше чем минимальное
-        кол-ство игроков
+        """Нажимается кнопка "Начать игру".
+        Но участников меньше чем минимальное кол-ство игроков.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         wait_p_state.deleted_unnecessary_messages = AsyncMock()
@@ -382,18 +358,17 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_finish_game_dont_exist_session(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player1,
-
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player1,
     ):
-        """
-        Тест на кнопку "закончить игру"
+        """Тест на кнопку "закончить игру".
+        Сессия не существует.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         wait_p_state.deleted_unnecessary_messages = AsyncMock()
@@ -411,19 +386,19 @@ class TestWaitingPlayersProcessGameBot:
             callback_query_id=callback.id_,
             text=consts.GAME_DONT_EXIST,
         )
-    async def test_handle_finish_game_is_dont_participant(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player7,
 
+    async def test_handle_finish_game_is_dont_participant(
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player7,
     ):
-        """
-        Тест на кнопку "закончить игру"
+        """Тест на кнопку "закончить игру".
+        Нажимает не участник игры.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         wait_p_state.deleted_unnecessary_messages = AsyncMock()
@@ -446,18 +421,17 @@ class TestWaitingPlayersProcessGameBot:
         )
 
     async def test_handle_finish_game_is_captain(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player1,
-
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player1,
     ):
-        """
-        Тест на кнопку "закончить игру"
+        """Тест на кнопку "закончить игру".
+        Нажимает капитан.
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         wait_p_state.cancel_game = AsyncMock()
@@ -475,26 +449,25 @@ class TestWaitingPlayersProcessGameBot:
         )
 
         wait_p_state.cancel_game.assert_called_once_with(
-                current_chat_id=chat_id, session_id=session_id
-            )
+            current_chat_id=chat_id, session_id=session_id
+        )
         wait_p_state.app.store.tg_api.answer_callback_query.assert_called_once_with(
             callback_query_id=callback.id_,
             text=consts.YOU_CAP_AND_YOU_FINISH_GAME,
         )
 
     async def test_handle_finish_game_is_not_captain(
-            self,
-            chat_id,
-            session_id,
-            session_game,
-            wait_p_state,
-            callback,
-            full_players,
-            player2,
-
+        self,
+        chat_id,
+        session_id,
+        session_game,
+        wait_p_state,
+        callback,
+        full_players,
+        player2,
     ):
-        """
-        Тест на кнопку "закончить игру"
+        """Тест на кнопку "закончить игру".
+        Нажимает не капитан
         """
         wait_p_state.add_message_in_unnecessary_messages = AsyncMock()
         wait_p_state.cancel_game = AsyncMock()
@@ -512,17 +485,14 @@ class TestWaitingPlayersProcessGameBot:
         )
 
         wait_p_state.player_store.set_player_is_active.assert_called_once_with(
-                session_id=session_id, id_tg=callback.from_.id_, new_active=False
+            session_id=session_id, id_tg=callback.from_.id_, new_active=False
         )
 
         wait_p_state.app.store.tg_api.send_message.assert_called_once_with(
             chat_id=chat_id,
-            text=consts.PLAYER_EXIT.format(
-                username=callback.from_.username
-            ),
+            text=consts.PLAYER_EXIT.format(username=callback.from_.username),
         )
         wait_p_state.app.store.tg_api.answer_callback_query.assert_called_once_with(
-            callback_query_id=callback.id_,
-            text=consts.YOU_EXIT_GAME
+            callback_query_id=callback.id_, text=consts.YOU_EXIT_GAME
         )
         wait_p_state.add_message_in_unnecessary_messages.assert_called()

@@ -1,5 +1,4 @@
 import json
-from pprint import pprint
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urljoin
 
@@ -78,7 +77,6 @@ class TelegramApiAccessor(BaseAccessor):
                         updates_datas.append(data)
 
                     elif "callback_query" in update:
-                        pprint(update["callback_query"])
                         callback = CallbackTG.from_dict(
                             update["callback_query"]
                         )

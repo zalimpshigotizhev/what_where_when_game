@@ -31,7 +31,7 @@ class VerdictCaptain(BotBase):
                 curr_player = await self.player_store.get_player_by_idtg(
                     session_id=curr_sess.id, id_tg=message.from_.id_
                 )
-                if curr_player is not None and not curr_player.is_captain:
+                if curr_player is None or not curr_player.is_captain:
                     mess = await self.app.store.tg_api.send_message(
                         chat_id=chat_id, text=consts.WARNING_CAPTAIN_ONLY
                     )

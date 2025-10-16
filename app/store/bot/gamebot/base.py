@@ -1,9 +1,10 @@
-import asyncio
 from typing import TYPE_CHECKING
 
 from app.bot.game.models import (
+    GameState,
     PlayerModel,
-    RoundModel, StatusSession, GameState,
+    RoundModel,
+    StatusSession,
 )
 from app.quiz.models import QuestionModel
 from app.store.bot import consts
@@ -12,9 +13,8 @@ from app.store.bot.keyboards import (
 )
 
 if TYPE_CHECKING:
-    from app.web.app import Application
     from app.store import GameSessionAccessor
-
+    from app.web.app import Application
 
 
 class GameProcessedError(Exception):
@@ -32,7 +32,7 @@ class BotBase:
         return self.app.store.rounds
 
     @property
-    def game_store(self) -> 'GameSessionAccessor':
+    def game_store(self) -> "GameSessionAccessor":
         return self.app.store.game_session
 
     @property
@@ -111,8 +111,9 @@ class BotBase:
         if not curr_sess or curr_sess.status != StatusSession.PROCESSING:
             await self.app.store.tg_api.send_message(
                 chat_id=current_chat_id,
-                text=("*У вас нет активной игровой сессии.*\n"
-                     "Начните её /start")
+                text=(
+                    "*У вас нет активной игровой сессии.*\n" "Начните её /start"
+                ),
             )
             self.app.logger.error("Эта игра прекращена или в ожидании")
             return
@@ -138,8 +139,9 @@ class BotBase:
 
         if len(players_is_active_is_ready) < consts.MIN_PLAYERS:
             await self.cancel_game(
-                current_chat_id=current_chat_id, session_id=curr_sess.id,
-                text=consts.ENOUGH_PLAYERS
+                current_chat_id=current_chat_id,
+                session_id=curr_sess.id,
+                text=consts.ENOUGH_PLAYERS,
             )
             return
 
@@ -176,9 +178,9 @@ class BotBase:
         )
 
     async def verdict_captain(
-            self,
-            current_chat_id: int,
-            session_id: int,
+        self,
+        current_chat_id: int,
+        session_id: int,
     ):
         """Переходная функция для опроса капитана."""
         curr_sess = await self.game_store.get_active_session_by_chat_id(
@@ -187,8 +189,9 @@ class BotBase:
         if curr_sess is None:
             await self.app.store.tg_api.send_message(
                 chat_id=current_chat_id,
-                text=("*У вас нет активной игровой сессии.*\n"
-                     "Начните её /start")
+                text=(
+                    "*У вас нет активной игровой сессии.*\n" "Начните её /start"
+                ),
             )
             self.app.logger.error("Эта игра прекращена или в ожидании")
             return

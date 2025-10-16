@@ -3,11 +3,10 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.bot.game.models import RoundModel, GameState
-from app.quiz.models import QuestionModel, AnswerModel, ThemeModel
+from app.bot.game.models import GameState, RoundModel
+from app.quiz.models import AnswerModel, QuestionModel, ThemeModel
 from app.store.bot import consts
 from app.store.bot.gamebot.wait_answer_state import WaitAnswer
-from tests.unit.store.bot.conftest import chat_id
 
 
 class TestWaitAnswer:
@@ -26,16 +25,13 @@ class TestWaitAnswer:
             question=QuestionModel(
                 id=1,
                 title="Аисты кидают туда ребенка, назовите овощ?",
-                theme=ThemeModel(
-                    id=1,
-                    title="Дети"
-                ),
+                theme=ThemeModel(id=1, title="Дети"),
                 true_answer=AnswerModel(
                     id=1,
                     title="Капуста",
-                    description="Детям ведь, не скажешь правду"
-                )
-            )
+                    description="Детям ведь, не скажешь правду",
+                ),
+            ),
         )
 
     @pytest.mark.asyncio
@@ -48,17 +44,16 @@ class TestWaitAnswer:
 
     @pytest.mark.asyncio
     async def test_handle_wait_answer_wrong_player_answered(
-            self,
-            wait_answer,
-            message,
-            session_game,
-            chat_id,
-            full_players,
-            player4,
-            correct_round
+        self,
+        wait_answer,
+        message,
+        session_game,
+        full_players,
+        player4,
+        correct_round,
     ):
-        """
-        Тест если отвечает не выбранный капитаном игрок.
+        """Тест если отвечает не выбранный капитаном игрок.
+        Ответил не тот игрок
         """
         message.from_.username = player4.user.username_tg
         message.from_.id_ = player4.user.id_tg
@@ -69,35 +64,32 @@ class TestWaitAnswer:
             return_value=session_game
         )
 
-        await wait_answer.handle_wait_answer(
-            message, GameState.WAIT_ANSWER
-        )
+        await wait_answer.handle_wait_answer(message, GameState.WAIT_ANSWER)
         wait_answer.game_store.get_active_session_by_chat_id.assert_called_with(
             chat_id=session_game.chat_id
         )
 
         wait_answer.is_answer_false.assert_called_once_with(
             session_id=session_game.id,
-            current_chat_id=chat_id,
-            text=f"Должен был ответить - @{session_game.current_round.answer_player.user.username_tg}\n"
-                 f"А ответил @{message.from_.username}\n"
-                 f"*Ответ засчитан как неправильный! Будьте внимательны*",
+            current_chat_id=session_game.chat_id,
+            text=f"Должен был ответить - "
+            f"@{correct_round.answer_player.user.username_tg}\n"
+            f"А ответил @{message.from_.username}\n"
+            f"*Ответ засчитан как неправильный! Будьте внимательны*",
         )
-
 
     @pytest.mark.asyncio
     async def test_handle_wait_answer_false_game_continue(
-            self,
-            wait_answer,
-            message,
-            session_game,
-            chat_id,
-            full_players,
-            player5,
-            correct_round
+        self,
+        wait_answer,
+        message,
+        session_game,
+        full_players,
+        player5,
+        correct_round,
     ):
-        """
-        Тест если ответ неправильный. Игра продолжается
+        """Тест если ответ неправильный.
+        Игра продолжается
         """
         message.text = "Корова"
         message.from_.username = player5.user.username_tg
@@ -108,32 +100,27 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=False
         )
-        escape_markdown = Mock()
         wait_answer.round_store.set_is_correct_answer = AsyncMock()
         wait_answer.round_store.set_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
-        wait_answer.check_and_notify_score = AsyncMock(
-            return_value=True
-        )
+        wait_answer.check_and_notify_score = AsyncMock(return_value=True)
 
         wait_answer.is_answer_false = AsyncMock()
         wait_answer.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
         )
 
-        await wait_answer.handle_wait_answer(
-            message, GameState.WAIT_ANSWER
-        )
+        await wait_answer.handle_wait_answer(message, GameState.WAIT_ANSWER)
         wait_answer.game_store.get_active_session_by_chat_id.assert_called_with(
             chat_id=session_game.chat_id
         )
         wait_answer.app.store.timer_manager.cancel_timer.assert_called_with(
-            chat_id=chat_id, timer_type="30_second_for_answer"
+            chat_id=session_game.chat_id, timer_type="30_second_for_answer"
         )
 
         session_game.current_round.question.is_answer_is_true(message.text)
         wait_answer.app.store.tg_api.send_message.assert_called_with(
-            chat_id=chat_id,
+            chat_id=session_game.chat_id,
             text=consts.IS_ANSWER_FALSE.format(
                 answer=session_game.current_round.question.true_answer.title
             ),
@@ -145,27 +132,26 @@ class TestWaitAnswer:
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(
-            session_id=session_game.id, chat_id=chat_id
+            session_id=session_game.id, chat_id=session_game.chat_id
         )
         wait_answer.next_quest.assert_called_once_with(
             text=consts.ARE_YOU_READY_NEXT_QUEST,
-            chat_id=chat_id,
+            chat_id=session_game.chat_id,
             session_id=session_game.id,
         )
 
     @pytest.mark.asyncio
     async def test_handle_wait_answer_not_false_game_stop(
-            self,
-            wait_answer,
-            message,
-            session_game,
-            chat_id,
-            full_players,
-            player5,
-            correct_round
+        self,
+        wait_answer,
+        message,
+        session_game,
+        full_players,
+        player5,
+        correct_round,
     ):
-        """
-        Тест если ответ неправильный. Игра заканчивается
+        """Тест если ответ неправильный.
+        Игра заканчивается
         """
         message.text = "Корова"
         message.from_.username = player5.user.username_tg
@@ -176,32 +162,27 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=False
         )
-        escape_markdown = Mock()
         wait_answer.round_store.set_is_correct_answer = AsyncMock()
         wait_answer.round_store.set_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
-        wait_answer.check_and_notify_score = AsyncMock(
-            return_value=False
-        )
+        wait_answer.check_and_notify_score = AsyncMock(return_value=False)
 
         wait_answer.is_answer_false = AsyncMock()
         wait_answer.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
         )
 
-        await wait_answer.handle_wait_answer(
-            message, GameState.WAIT_ANSWER
-        )
+        await wait_answer.handle_wait_answer(message, GameState.WAIT_ANSWER)
         wait_answer.game_store.get_active_session_by_chat_id.assert_called_with(
             chat_id=session_game.chat_id
         )
         wait_answer.app.store.timer_manager.cancel_timer.assert_called_with(
-            chat_id=chat_id, timer_type="30_second_for_answer"
+            chat_id=session_game.chat_id, timer_type="30_second_for_answer"
         )
 
         session_game.current_round.question.is_answer_is_true(message.text)
         wait_answer.app.store.tg_api.send_message.assert_called_with(
-            chat_id=chat_id,
+            chat_id=session_game.chat_id,
             text=consts.IS_ANSWER_FALSE.format(
                 answer=session_game.current_round.question.true_answer.title
             ),
@@ -213,23 +194,22 @@ class TestWaitAnswer:
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(
-            session_id=session_game.id, chat_id=chat_id
+            session_id=session_game.id, chat_id=session_game.chat_id
         )
         wait_answer.next_quest.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_handle_wait_answer_true_game_continue(
-            self,
-            wait_answer,
-            message,
-            session_game,
-            chat_id,
-            full_players,
-            player5,
-            correct_round
+        self,
+        wait_answer,
+        message,
+        session_game,
+        full_players,
+        player5,
+        correct_round,
     ):
-        """
-        Тест если ответ неправильный. Игра заканчивается
+        """Тест если ответ неправильный.
+        Игра продолжается
         """
         message.text = "Корова"
         message.from_.username = player5.user.username_tg
@@ -240,33 +220,28 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=True
         )
-        escape_markdown = Mock()
         asyncio.sleep = AsyncMock()
         wait_answer.round_store.set_is_correct_answer = AsyncMock()
         wait_answer.round_store.set_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
-        wait_answer.check_and_notify_score = AsyncMock(
-            return_value=True
-        )
+        wait_answer.check_and_notify_score = AsyncMock(return_value=True)
 
         wait_answer.is_answer_false = AsyncMock()
         wait_answer.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
         )
 
-        await wait_answer.handle_wait_answer(
-            message, GameState.WAIT_ANSWER
-        )
+        await wait_answer.handle_wait_answer(message, GameState.WAIT_ANSWER)
         wait_answer.game_store.get_active_session_by_chat_id.assert_called_with(
             chat_id=session_game.chat_id
         )
         wait_answer.app.store.timer_manager.cancel_timer.assert_called_with(
-            chat_id=chat_id, timer_type="30_second_for_answer"
+            chat_id=session_game.chat_id, timer_type="30_second_for_answer"
         )
 
         session_game.current_round.question.is_answer_is_true(message.text)
         wait_answer.app.store.tg_api.send_message.assert_called_with(
-            chat_id=chat_id,
+            chat_id=session_game.chat_id,
             text=consts.IS_ANSWER_TRUE.format(
                 answer=session_game.current_round.question.true_answer.title
             ),
@@ -278,27 +253,27 @@ class TestWaitAnswer:
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(
-            session_id=session_game.id, chat_id=chat_id
+            session_id=session_game.id, chat_id=session_game.chat_id
         )
         wait_answer.next_quest.assert_called_once_with(
             text=consts.ARE_YOU_READY_NEXT_QUEST,
-            chat_id=chat_id,
+            chat_id=session_game.chat_id,
             session_id=session_game.id,
         )
 
     @pytest.mark.asyncio
     async def test_handle_wait_answer_true_game_stop(
-            self,
-            wait_answer,
-            message,
-            session_game,
-            chat_id,
-            full_players,
-            player5,
-            correct_round
+        self,
+        wait_answer,
+        message,
+        session_game,
+        full_players,
+        chat_id,
+        player5,
+        correct_round,
     ):
-        """
-        Тест если ответ неправильный. Игра заканчивается
+        """Тест если ответ неправильный.
+        Игра заканчивается
         """
         message.text = "Корова"
         message.from_.username = player5.user.username_tg
@@ -310,22 +285,17 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=True
         )
-        escape_markdown = Mock()
         wait_answer.round_store.set_is_correct_answer = AsyncMock()
         wait_answer.round_store.set_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
-        wait_answer.check_and_notify_score = AsyncMock(
-            return_value=False
-        )
+        wait_answer.check_and_notify_score = AsyncMock(return_value=False)
 
         wait_answer.is_answer_false = AsyncMock()
         wait_answer.game_store.get_active_session_by_chat_id = AsyncMock(
             return_value=session_game
         )
 
-        await wait_answer.handle_wait_answer(
-            message, GameState.WAIT_ANSWER
-        )
+        await wait_answer.handle_wait_answer(message, GameState.WAIT_ANSWER)
         wait_answer.game_store.get_active_session_by_chat_id.assert_called_with(
             chat_id=session_game.chat_id
         )

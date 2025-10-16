@@ -61,9 +61,9 @@ class MainGameBot(BotBase):
         )
         if active_sess is None:
             await self.game_store.create_session(
-                    chat_id=chat_id,
-                    status=StatusSession.PENDING,
-                )
+                chat_id=chat_id,
+                status=StatusSession.PENDING,
+            )
 
         elif active_sess.status == StatusSession.PENDING:
             pass

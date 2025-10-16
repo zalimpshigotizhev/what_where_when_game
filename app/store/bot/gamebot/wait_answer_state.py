@@ -1,6 +1,6 @@
 import asyncio
 
-from app.bot.game.models import PlayerModel, RoundModel, GameState
+from app.bot.game.models import GameState, PlayerModel, RoundModel
 from app.quiz.models import QuestionModel
 from app.store.bot import consts
 from app.store.bot.gamebot.base import BotBase

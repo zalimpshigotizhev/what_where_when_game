@@ -20,7 +20,8 @@ class QuestionDiscussionProcessGameBot(BotBase):
         pass
 
     # TODO: Добавить Хэндлер Который уничтожает сообщения
-    # TODO: Добавить FilterSet для filtered_handler которая срабатывает при определенных State
+    # TODO: Добавить FilterSet для filtered_handler
+    #  которая срабатывает при определенных State
     # @filtered_handler(
     #     TypeFilter(MessageTG)
     # )
