@@ -1,51 +1,7 @@
-import asyncio
-from collections.abc import Generator
-from unittest.mock import MagicMock
-
 import pytest
 
-from app.store import (
-    FSMContext,
-    GameSessionAccessor,
-    PlayerAccessor,
-    RoundAccessor,
-    Store,
-    TimerManager,
-)
 from app.store.bot.gamebot.base import BotBase
-from app.store.quiz.accessor import QuizAccessor
-from app.store.tg_api.accessor import TelegramApiAccessor
 from app.store.tg_api.dataclasses import CallbackTG, MessageTG
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture
-def mock_app():
-    """Создает мок объекта Application"""
-    app = MagicMock()
-
-    # Мок хранилища
-    app.store = MagicMock(spec=Store)
-    app.store.players = MagicMock(spec=PlayerAccessor)
-    app.store.rounds = MagicMock(spec=RoundAccessor)
-    app.store.quizzes = MagicMock(spec=QuizAccessor)
-    app.store.timer_manager = MagicMock(spec=TimerManager)
-    app.store.game_session = MagicMock(spec=GameSessionAccessor)
-    app.store.tg_api = MagicMock(spec=TelegramApiAccessor)
-    app.store.fsm = MagicMock(spec=FSMContext)
-
-    # Мок конфига
-    app.config = MagicMock()
-    app.config.bot = MagicMock()
-    app.config.bot.token = "test_token"
-
-    return app
 
 
 @pytest.fixture

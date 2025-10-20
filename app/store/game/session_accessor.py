@@ -69,7 +69,7 @@ class GameSessionAccessor(BaseAccessor):
         async with await self.app.database.get_session() as session:
             stmt = select(SessionModel).filter_by(id=session_id)
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return result.unique().scalar_one_or_none()
 
     async def get_active_session_by_chat_id(
         self,
