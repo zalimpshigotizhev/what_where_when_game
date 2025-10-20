@@ -3,7 +3,11 @@ from sqlalchemy import select
 
 from app.bot.game.models import PlayerModel
 from app.bot.user.models import UserModel
-from tests.utils import game_players_to_dict, game_users_to_dict
+from tests.utils import (
+    game_player_to_dict,
+    game_players_to_dict,
+    game_users_to_dict,
+)
 
 
 class TestPlayerAccessor:
@@ -12,7 +16,7 @@ class TestPlayerAccessor:
         assert "users" in inspect_list_tables
 
     @pytest.mark.asyncio
-    async def test_create_session(
+    async def test_create_player(
         self,
         store,
         active_game_session,
@@ -59,3 +63,130 @@ class TestPlayerAccessor:
                 "user_id": player.user_id,
             }
         ]
+
+    @pytest.mark.asyncio
+    async def test_get_player_by_id(
+        self,
+        store,
+        active_player,
+        db_sessionmaker,
+        id_tg,
+        username_tg,
+    ):
+        exist_player = await store.players.get_player_by_id(
+            player_id=active_player.id
+        )
+        assert exist_player is not None
+        assert game_player_to_dict(exist_player) == {
+            "id": active_player.id,
+            "session_id": active_player.session_id,
+            "is_active": active_player.is_active,
+            "is_ready": active_player.is_ready,
+            "is_captain": active_player.is_captain,
+            "user_id": active_player.user_id,
+        }
+
+    @pytest.mark.asyncio
+    async def test_get_player_by_username_tg(
+        self,
+        store,
+        active_player,
+        db_sessionmaker,
+        id_tg,
+        username_tg,
+    ):
+        exist_player = await store.players.get_player_by_username_tg(
+            session_id=active_player.session_id, username_tg=username_tg
+        )
+        assert exist_player is not None
+        assert game_player_to_dict(exist_player) == {
+            "id": active_player.id,
+            "session_id": active_player.session_id,
+            "is_active": active_player.is_active,
+            "is_ready": active_player.is_ready,
+            "is_captain": active_player.is_captain,
+            "user_id": active_player.user_id,
+        }
+
+    @pytest.mark.asyncio
+    async def test_get_player_by_idtg(
+        self,
+        store,
+        active_player,
+        db_sessionmaker,
+        id_tg,
+        username_tg,
+    ):
+        exist_player = await store.players.get_player_by_idtg(
+            session_id=active_player.session_id, id_tg=id_tg
+        )
+        assert exist_player is not None
+        assert game_player_to_dict(exist_player) == {
+            "id": active_player.id,
+            "session_id": active_player.session_id,
+            "is_active": active_player.is_active,
+            "is_ready": active_player.is_ready,
+            "is_captain": active_player.is_captain,
+            "user_id": active_player.user_id,
+        }
+
+    @pytest.mark.asyncio
+    async def test_set_player_is_active(
+        self,
+        store,
+        active_player,
+        db_sessionmaker,
+        id_tg,
+        username_tg,
+    ):
+        assert active_player.is_active is True
+        await store.players.set_player_is_active(
+            session_id=active_player.session_id, id_tg=id_tg, new_active=False
+        )
+
+        exist_player = await store.players.get_player_by_id(
+            player_id=active_player.id
+        )
+        assert exist_player is not None
+        assert exist_player.is_active is False
+
+    @pytest.mark.asyncio
+    async def test_set_all_players_is_ready_false(
+        self,
+        store,
+        active_game_session,
+        db_sessionmaker,
+        id_tg,
+        username_tg,
+        is_active_players,
+    ):
+        assert all(player.is_ready for player in is_active_players)
+        await store.players.set_all_players_is_ready_false(
+            session_id=active_game_session.id,
+        )
+
+        exist_sess = await store.game_session.get_active_session_by_chat_id(
+            chat_id=active_game_session.chat_id, inload_players=True
+        )
+        assert len(exist_sess.players) == 6
+        assert all(player.is_ready is False for player in exist_sess.players)
+
+    @pytest.mark.asyncio
+    async def test_set_player_is_ready(
+        self,
+        store,
+        active_player,
+        db_sessionmaker,
+        id_tg,
+        username_tg,
+    ):
+        assert active_player.is_ready is False
+        await store.players.set_player_is_ready(
+            session_id=active_player.session_id, id_tg=id_tg, new_active=True
+        )
+
+        exist_player = await store.players.get_player_by_id(
+            player_id=active_player.id
+        )
+        assert exist_player is not None
+        assert exist_player.is_active is True

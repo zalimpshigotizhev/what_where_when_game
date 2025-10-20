@@ -30,6 +30,7 @@ class PlayerAccessor(BaseAccessor):
             )
             session.add(new_player)
             await session.commit()
+            await session.refresh(new_player)
             return new_player
 
     async def get_player_by_id(

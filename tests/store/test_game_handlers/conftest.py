@@ -1,13 +1,8 @@
 import pytest
 
+from app.bot.game.models import StateModel
 from app.store.bot.gamebot.base import BotBase
-from app.store.tg_api.dataclasses import CallbackTG, MessageTG
-
-
-@pytest.fixture
-def bot_base(mock_app):
-    """Создает экземпляр BotBase для тестирования"""
-    return BotBase(mock_app)
+from app.store.tg_api.dataclasses import CallbackTG, CommandTG, MessageTG
 
 
 @pytest.fixture
@@ -17,7 +12,125 @@ def chat_id():
 
 @pytest.fixture
 def session_id():
-    return 321
+    return 1
+
+
+@pytest.fixture
+def state_id():
+    return 1
+
+
+@pytest.fixture
+def admin_id_tg():
+    return 111
+
+
+@pytest.fixture
+def admin_username():
+    return "courvuisier"
+
+
+@pytest.fixture
+def id_tg():
+    return 112
+
+
+@pytest.fixture
+def username():
+    return "courva"
+
+
+@pytest.fixture
+def command_dummy(app, chat_id, admin_id_tg, admin_username):
+    return CommandTG.from_dict(
+        {
+            "text": "TEXT_WITH_SLASH",
+            "chat": {
+                "id": chat_id,
+                "type": "group",
+                "title": "Во так вот",
+            },
+            "from": {
+                "first_name": "zalim",
+                "id": admin_id_tg,
+                "is_bot": False,
+                "is_premium": True,
+                "language_code": "ru",
+                "username": admin_username,
+            },
+        }
+    )
+
+
+@pytest.fixture
+async def active_session_added_db(
+    store,
+    session_id,
+    state_id,
+    chat_id,
+    db_sessionmaker,
+):
+    from app.bot.game.models import GameState, SessionModel, StatusSession
+
+    async with db_sessionmaker() as sess:
+        new_session = SessionModel(
+            id=session_id,
+            chat_id=chat_id,
+            status=StatusSession.PROCESSING,
+            current_round_id=None,
+        )
+        sess.add(new_session)
+        sess.add(
+            StateModel(
+                id=state_id,
+                current_state=GameState.INACTIVE,
+                data={},
+                session_id=session_id,
+            )
+        )
+        await sess.commit()
+    return new_session
+
+
+@pytest.fixture
+async def captain_added_db(
+    store,
+    session_id,
+    admin_id_tg,
+    admin_username,
+):
+    return await store.players.create_player(
+        session_id=session_id,
+        id_tg=admin_id_tg,
+        username_tg=admin_username,
+        is_active=True,
+        is_ready=True,
+        is_captain=True,
+    )
+
+
+@pytest.fixture
+async def player2_added_db(
+    store,
+    session_id,
+    id_tg,
+    username,
+):
+    return await store.players.create_player(
+        session_id=session_id,
+        id_tg=id_tg,
+        username_tg=username,
+        is_active=True,
+        is_ready=True,
+        is_captain=False,
+    )
+
+
+# Старое от чего нужно отказаться
+@pytest.fixture
+def bot_base(mock_app):
+    """Создает экземпляр BotBase для тестирования"""
+    return BotBase(mock_app)
 
 
 @pytest.fixture

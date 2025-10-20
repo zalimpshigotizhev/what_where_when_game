@@ -72,6 +72,7 @@ def app():
     app.on_cleanup.clear()
 
     app.database = Database(app)
+    app.store.tg_api = MagicMock(spec=TelegramApiAccessor)
 
     app.on_startup.append(app.database.connect)
     app.on_startup.append(app.store.admins.connect)
@@ -151,43 +152,3 @@ async def clear_db(app: Application) -> Iterator[None]:
 @pytest.fixture
 def config(app: Application) -> Config:
     return app.config
-
-
-@pytest.fixture
-def id_tg():
-    return 123
-
-
-@pytest.fixture
-def username_tg():
-    return "courvuisier"
-
-
-@pytest.fixture
-def chat_id():
-    return 1
-
-
-@pytest.fixture
-def session_id():
-    return 1
-
-
-@pytest.fixture
-async def active_game_session(
-    db_sessionmaker,
-    session_id,
-    chat_id,
-):
-    from app.bot.game.models import SessionModel, StatusSession
-
-    async with db_sessionmaker() as sess:
-        new_session = SessionModel(
-            id=session_id,
-            chat_id=chat_id,
-            status=StatusSession.PROCESSING,
-            current_round_id=None,
-        )
-        sess.add(new_session)
-        await sess.commit()
-    return new_session
