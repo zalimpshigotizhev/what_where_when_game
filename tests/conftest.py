@@ -1,33 +1,54 @@
-import asyncio
-from collections.abc import Generator
-from unittest.mock import AsyncMock, MagicMock
+import logging
+import os
+from asyncio import AbstractEventLoop
+from collections.abc import Iterator
+from unittest.mock import MagicMock
 
 import pytest
+from aiohttp.pytest_plugin import AiohttpClient
+from aiohttp.test_utils import TestClient, loop_context
+from sqlalchemy import inspect, text
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+)
 
-from app.store.bot.gamebot import BotBase
+from app.store import (
+    Database,
+    FSMContext,
+    GameSessionAccessor,
+    PlayerAccessor,
+    RoundAccessor,
+    Store,
+    TimerManager,
+)
+from app.store.quiz.accessor import QuizAccessor
+from app.store.tg_api.accessor import TelegramApiAccessor
+from app.web.app import Application, setup_app
+from app.web.config import Config
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+def event_loop() -> Iterator[None]:
+    with loop_context() as _loop:
+        yield _loop
 
 
 @pytest.fixture
 def mock_app():
-    """Создает мок объекта Application"""
+    """Создает Mock объекта Application"""
     app = MagicMock()
-
     # Мок хранилища
-    app.store = MagicMock()
-    app.store.game_session = MagicMock()
-    app.store.players = MagicMock()
-    app.store.rounds = MagicMock()
-    app.store.quizzes = MagicMock()
-    app.store.fsm = MagicMock()
-    app.store.tg_api = MagicMock()
-    app.store.timer_manager = MagicMock()
+    app.store = MagicMock(spec=Store)
+    app.store.players = MagicMock(spec=PlayerAccessor)
+    app.store.rounds = MagicMock(spec=RoundAccessor)
+    app.store.quizzes = MagicMock(spec=QuizAccessor)
+    app.store.timer_manager = MagicMock(spec=TimerManager)
+    app.store.game_session = MagicMock(spec=GameSessionAccessor)
+    app.store.tg_api = MagicMock(spec=TelegramApiAccessor)
+    app.store.fsm = MagicMock(spec=FSMContext)
 
     # Мок конфига
     app.config = MagicMock()
@@ -37,20 +58,97 @@ def mock_app():
     return app
 
 
-# Фикстура для базового бота
-@pytest.fixture
-def bot_base(mock_app):
-    """Создает экземпляр BotBase для тестирования"""
-    return BotBase(mock_app)
+@pytest.fixture(scope="session")
+def app():
+    """Создает объект Application"""
+    app = setup_app(
+        config_path=os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), "config.yaml"
+        ),
+        test_=True,
+    )
+    app.on_startup.clear()
+    app.on_shutdown.clear()
+    app.on_cleanup.clear()
+
+    app.database = Database(app)
+    app.store.tg_api = MagicMock(spec=TelegramApiAccessor)
+
+    app.on_startup.append(app.database.connect)
+    app.on_startup.append(app.store.admins.connect)
+
+    app.on_shutdown.append(app.database.disconnect)
+    app.on_shutdown.append(app.store.admins.disconnect)
+    return app
 
 
-# Фикстура для мока FSM контекста
+@pytest.fixture(autouse=True)
+def cli(
+    aiohttp_client: AiohttpClient,
+    event_loop: AbstractEventLoop,
+    app: Application,
+) -> TestClient:
+    return event_loop.run_until_complete(aiohttp_client(app))
+
+
 @pytest.fixture
-def mock_fsm_context():
-    """Мок для FSMContext"""
-    context = MagicMock()
-    context.get_state = AsyncMock()
-    context.set_state = AsyncMock()
-    context.get_data = AsyncMock()
-    context.update_data = AsyncMock()
-    return context
+async def auth_cli(cli: TestClient, config: Config) -> TestClient:
+    await cli.post(
+        path="/admin.login",
+        json={
+            "email": config.admin.email,
+            "password": config.admin.password,
+        },
+    )
+    return cli
+
+
+@pytest.fixture
+def store(app):
+    return app.store
+
+
+@pytest.fixture
+def db_sessionmaker(
+    app: Application,
+) -> async_sessionmaker[AsyncSession]:
+    return app.database.session
+
+
+@pytest.fixture
+def db_engine(app: Application) -> AsyncEngine:
+    return app.database.engine
+
+
+@pytest.fixture
+async def inspect_list_tables(db_engine: AsyncEngine) -> list[str]:
+    def use_inspector(connection: AsyncConnection) -> list[str]:
+        inspector = inspect(connection)
+        return inspector.get_table_names()
+
+    async with db_engine.begin() as conn:
+        return await conn.run_sync(use_inspector)
+
+
+@pytest.fixture(autouse=True)
+async def clear_db(app: Application) -> Iterator[None]:
+    try:
+        yield
+    except Exception as err:
+        logging.warning(err)
+    finally:
+        session = AsyncSession(app.database.engine)
+        connection = session.connection()
+        for table in app.database._db.metadata.tables:
+            await session.execute(text(f"TRUNCATE {table} CASCADE"))
+            await session.execute(
+                text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1")
+            )
+
+        await session.commit()
+        connection.close()
+
+
+@pytest.fixture
+def config(app: Application) -> Config:
+    return app.config

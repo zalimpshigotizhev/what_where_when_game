@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Any
 
-import yaml
 from attr import dataclass
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
@@ -14,7 +13,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.store.database.sqlalchemy_base import BaseModel
 
 if TYPE_CHECKING:
-    from app import Application
+    from app.web.app import Application
 
 
 @dataclass
@@ -24,29 +23,6 @@ class DatabaseConfig:
     database: str = "demo"
     user: str | None = None
     password: str | None = None
-
-
-def gen_db_config() -> DatabaseConfig:
-    with open("./config.yml", "r") as f:
-        raw_config = yaml.safe_load(f)
-        db_config: dict = raw_config["database"]
-    return DatabaseConfig(
-        host=db_config.get("host"),
-        port=db_config.get("port"),
-        user=db_config.get("user"),
-        password=db_config.get("password"),
-        database=db_config.get("database"),
-    )
-
-
-db_config = gen_db_config()
-
-
-def constr_config_var() -> str:
-    return (
-        f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}"
-        f"/{db_config.database}"
-    )
 
 
 class Database:
@@ -60,6 +36,7 @@ class Database:
     async def connect(self, *args: Any, **kwargs: Any) -> None:
         if self.engine:
             return
+        db_config = self.app.config.database
 
         self.engine = create_async_engine(
             URL.create(

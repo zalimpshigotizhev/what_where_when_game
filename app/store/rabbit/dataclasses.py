@@ -77,7 +77,7 @@ class CommandTG(UpdateABC):
         return cls(
             text=data["text"],
             chat=ChatTG.from_dict(data["chat"]),
-            from_=data["from"],
+            from_=UserORBotTG.from_dict(data["from"]),
         )
 
 

@@ -30,6 +30,7 @@ class PlayerAccessor(BaseAccessor):
             )
             session.add(new_player)
             await session.commit()
+            await session.refresh(new_player)
             return new_player
 
     async def get_player_by_id(
@@ -40,7 +41,7 @@ class PlayerAccessor(BaseAccessor):
             stmt = select(PlayerModel).filter_by(id=player_id)
 
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return result.unique().scalar_one_or_none()
 
     async def get_player_by_username_tg(
         self,

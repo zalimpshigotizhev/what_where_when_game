@@ -34,17 +34,29 @@ class DatabaseConfig:
 
 
 @dataclass
+class RabbitConfig:
+    host: str
+    port: int
+    user: str
+    password: str
+
+
+@dataclass
 class Config:
     admin: AdminConfig
     session: SessionConfig | None = None
     bot: BotConfig | None = None
     database: DatabaseConfig | None = None
+    rabbit: RabbitConfig | None = None
+
+
+def get_config_to_dict(config_path: str) -> dict:
+    with open(config_path, "r") as f:
+        return yaml.safe_load(f)
 
 
 def setup_config(app: "Application", config_path: str):
-    with open(config_path, "r") as f:
-        raw_config = yaml.safe_load(f)
-
+    raw_config = get_config_to_dict(config_path=config_path)
     app.config = Config(
         session=SessionConfig(
             key=raw_config["session"]["key"],
@@ -58,4 +70,5 @@ def setup_config(app: "Application", config_path: str):
             group_id=raw_config["bot"]["group_id"],
         ),
         database=DatabaseConfig(**raw_config["database"]),
+        rabbit=RabbitConfig(**raw_config["rabbit"]),
     )

@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
 from sqlalchemy import func, select
 
@@ -41,11 +41,11 @@ class QuizAccessor(BaseAccessor):
         return result.scalars().all()
 
     async def create_question(
-        self, title: str, theme_id: int, answers: Iterable[AnswerModel]
+        self, title: str, theme_id: int, true_answer: AnswerModel
     ) -> QuestionModel:
         async with await self.app.database.get_session() as session:
             new_question = QuestionModel(
-                title=title, theme_id=theme_id, answers=answers
+                title=title, theme_id=theme_id, true_answer=true_answer
             )
             session.add(new_question)
             await session.commit()

@@ -1,5 +1,5 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.base.base_accessor import BaseAccessor
 from app.bot.game.models import (
@@ -69,7 +69,7 @@ class GameSessionAccessor(BaseAccessor):
         async with await self.app.database.get_session() as session:
             stmt = select(SessionModel).filter_by(id=session_id)
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return result.unique().scalar_one_or_none()
 
     async def get_active_session_by_chat_id(
         self,
@@ -101,6 +101,56 @@ class GameSessionAccessor(BaseAccessor):
 
             result = await session.execute(stmt)
             return result.unique().scalars().one_or_none()
+
+    async def get_active_sessions(
+        self,
+    ) -> list[SessionModel] | None:
+        """Возвращает сессии у которой:
+        SessionModel.status in
+        [StatusSession.PROCESSING].
+        :return: Список всех активных сессий
+        """
+        async with await self.app.database.get_session() as session:
+            stmt = select(SessionModel).options(
+                joinedload(SessionModel.state),
+                joinedload(SessionModel.players),
+                joinedload(SessionModel.rounds),
+            )
+
+            stmt = stmt.where(
+                SessionModel.status.in_([StatusSession.PROCESSING])
+            )
+
+            result = await session.execute(stmt)
+            return result.unique().scalars().all()
+
+    async def get_completed_sessions(
+        self, chat_id: str | None
+    ) -> list[SessionModel] | None:
+        """Возвращает сессии у которой:
+        SessionModel.status in
+        [StatusSession.COMPLETED].
+        :return: Список всех активных сессий
+        """
+        if chat_id is not None:
+            chat_id = int(chat_id)
+
+        async with await self.app.database.get_session() as session:
+            stmt = select(SessionModel).options(
+                joinedload(SessionModel.state),
+                joinedload(SessionModel.players),
+                joinedload(SessionModel.rounds),
+            )
+
+            stmt = stmt.where(
+                SessionModel.status.in_([StatusSession.COMPLETED])
+            )
+
+            if chat_id is not None:
+                stmt = stmt.where(SessionModel.chat_id == chat_id)
+
+            result = await session.execute(stmt)
+            return result.unique().scalars().all()
 
     async def set_status(
         self, session_id: int, new_status: StatusSession

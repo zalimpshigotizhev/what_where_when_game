@@ -31,3 +31,7 @@ pycparser==2.21
 typing_extensions==4.10.0
 webargs==8.4.0
 yarl==1.9.4
+aio-pika==9.5.7
+aiormq==6.9.2
+pamqp==3.3.0
+

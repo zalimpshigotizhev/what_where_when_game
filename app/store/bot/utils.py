@@ -1,9 +1,10 @@
+import re
 from functools import wraps
 from typing import Any
 
 from app.bot.game.models import GameState
-from app.store.bot.fsm import FSMContext
-from app.store.tg_api.dataclasses import (
+from app.store.fsm.fsm import FSMContext
+from app.store.rabbit.dataclasses import (
     CallbackTG,
     CommandTG,
     MessageTG,
@@ -75,3 +76,9 @@ def filtered_handler(*filters: Filter):
         return wrapper
 
     return decorator
+
+
+def escape_markdown(text):
+    """Функция для избежания конфликтов в MarkdownV2"""
+    escape_chars = r"_*[]()~`>#+-=|{}.!"
+    return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)

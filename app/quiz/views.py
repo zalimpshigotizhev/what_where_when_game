@@ -43,27 +43,12 @@ class QuestionAddView(View):
     async def post(self):
         title = self.data["title"]
         theme_id = self.data["theme_id"]
-        answers = []
-        exist_is_cor = False
-        for answer in self.data["answers"]:
-            if answer["is_correct"] is True:
-                if exist_is_cor is True:
-                    return error_json_response(
-                        http_status=400, status=HTTP_ERROR_CODES[400]
-                    )
-                exist_is_cor = True
-            answers.append(
-                AnswerModel(
-                    title=answer["title"], is_correct=answer["is_correct"]
-                )
-            )
+        true_answer = AnswerModel(
+            title=self.data["true_answer"]["title"],
+            description=self.data["true_answer"]["description"],
+        )
 
-        if exist_is_cor is False or len(answers) == 1:
-            return error_json_response(
-                http_status=400, status=HTTP_ERROR_CODES[400]
-            )
-
-        store = self.request.app
+        store = self.request.app.store
         is_exists_theme = await store.quizzes.get_theme_by_id(theme_id)
         if not is_exists_theme:
             return error_json_response(
@@ -78,17 +63,17 @@ class QuestionAddView(View):
             )
 
         question = await self.store.quizzes.create_question(
-            title=title, answers=answers, theme_id=theme_id
+            title=title, true_answer=true_answer, theme_id=theme_id
         )
 
         dict_quest = {
             "id": question.id,
             "title": question.title,
             "theme_id": question.theme_id,
-            "answers": [
-                {"title": answer.title, "is_correct": answer.is_correct}
-                for answer in question.answers
-            ],
+            "true_answer": {
+                "title": true_answer.title,
+                "description": true_answer.description,
+            },
         }
         return json_response(data=dict_quest)
 

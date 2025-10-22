@@ -19,15 +19,15 @@ db_states = {1213: {"state": GameState.INACTIVE, "data": {}}}
 
 class StateStorageABC(ABC):
     @abstractmethod
-    def get_state(self, chat_id: int):
+    async def get_state(self, chat_id: int):
         pass
 
     @abstractmethod
-    def set_state(self, chat_id: int, new_state: GameState):
+    async def set_state(self, chat_id: int, new_state: GameState):
         pass
 
     @abstractmethod
-    def update_data(self, chat_id: int, **kwargs):
+    async def update_data(self, chat_id: int, **kwargs) -> dict:
         pass
 
     @abstractmethod
@@ -35,7 +35,7 @@ class StateStorageABC(ABC):
         pass
 
     @abstractmethod
-    def clear_data(self, chat_id: int):
+    async def clear_data(self, chat_id: int):
         pass
 
 

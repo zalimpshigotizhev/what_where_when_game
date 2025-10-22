@@ -1,6 +1,8 @@
 import asyncio
 from asyncio import Future, Task
 
+from aiohttp import ClientOSError
+
 from app.store import Store
 
 
@@ -31,4 +33,23 @@ class Poller:
 
     async def poll(self) -> None:
         while self.is_running:
-            await self.store.tg_api.poll()
+            try:
+                await self.store.tg_api.poll()
+            except TimeoutError as e:
+                self.store.bots_manager.logger.warning(
+                    "Poll request timed out, retrying... %s", e
+                )
+                return
+            except ClientOSError as e:
+                self.store.bots_manager.logger.warning(
+                    "Network error: %s, retrying...", e
+                )
+                await asyncio.sleep(5)  # Пауза перед повторной попыткой
+                return
+
+            except Exception as e:
+                self.store.bots_manager.logger.error(
+                    "Unexpected error in poll: %s", e
+                )
+                await asyncio.sleep(5)
+                return

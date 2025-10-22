@@ -1,4 +1,5 @@
 import json
+from logging import getLogger
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urljoin
 
@@ -6,9 +7,7 @@ from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.store.bot.consts import MESSAGE_FOR_PRIVAT
-from app.store.tg_api.dataclasses import CallbackTG, MessageTG
-from app.store.tg_api.poller import Poller
+from app.store.rabbit.dataclasses import MessageTG
 
 if TYPE_CHECKING:
     from app.web.app import Application
@@ -20,69 +19,19 @@ class TelegramApiAccessor(BaseAccessor):
     def __init__(self, app: "Application", *args, **kwargs):
         super().__init__(app, *args, **kwargs)
         self.session: ClientSession | None = None
-        self.poller: Poller | None = None
-        self.timeout = 60
-        self.offset = 0
         self.server: str = f"{API_PATH}bot{self.app.config.bot.token}/"
+        self.logger = getLogger("TelegramApiAccessor")
 
     async def connect(self, app: "Application") -> None:
         self.session = ClientSession(connector=TCPConnector(verify_ssl=False))
-
-        self.poller = Poller(app.store)
-        self.logger.info("start polling")
-        self.poller.start()
 
     async def disconnect(self, app: "Application") -> None:
         if self.session:
             await self.session.close()
 
-        if self.poller:
-            await self.poller.stop()
-
     @staticmethod
     def _build_query(host: str, method: str, params: dict) -> str:
         return f"{urljoin(host, method)}?{urlencode(params)}"
-
-    async def poll(self):
-        updates_datas = []
-        async with self.session.get(
-            self._build_query(
-                host=self.server,
-                method="getUpdates",
-                params={"timeout": self.timeout, "offset": self.offset},
-            )
-        ) as response:
-            result = await response.json()
-            self.logger.info(result)
-
-            if result.get("ok") and result.get("result"):
-                updates_dicts = result["result"]
-                if updates_dicts:
-                    self.offset = (
-                        max(update["update_id"] for update in updates_dicts) + 1
-                    )
-                for update in updates_dicts:
-                    if "message" in update:
-                        message = MessageTG.from_dict(update["message"])
-                        data: MessageTG = message
-
-                        if message.is_command:
-                            data = message.to_command()
-
-                        if data.chat.type == "private":
-                            await self.send_message(
-                                chat_id=data.chat.id_, text=MESSAGE_FOR_PRIVAT
-                            )
-                            continue
-                        updates_datas.append(data)
-
-                    elif "callback_query" in update:
-                        callback = CallbackTG.from_dict(
-                            update["callback_query"]
-                        )
-                        data = callback
-                        updates_datas.append(data)
-            await self.app.store.bots_manager.handle_updates(updates_datas)
 
     async def send_message(
         self,
@@ -112,7 +61,7 @@ class TelegramApiAccessor(BaseAccessor):
         ) as response:
             data = await response.json()
 
-            self.logger.info(data)
+            getLogger("send_message_tg_api").info("Result: ok")
 
             return MessageTG.from_dict(data.get("result"))
 
@@ -139,9 +88,8 @@ class TelegramApiAccessor(BaseAccessor):
                 "answerCallbackQuery",
                 params=params,
             )
-        ) as response:
-            data = await response.json()
-            self.logger.info(data)
+        ):
+            getLogger("answer_tg_api").info("Result: ok")
 
     async def delete_message(self, chat_id: int, message_id: int) -> None:
         """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю"""
@@ -153,9 +101,8 @@ class TelegramApiAccessor(BaseAccessor):
                 "deleteMessage",
                 params=params,
             )
-        ) as response:
-            data = await response.json()
-            self.logger.info(data)
+        ):
+            getLogger("deleted_tg_api").info("Result: ok")
 
     async def delete_messages(self, chat_id: int, message_ids: list[int]):
         for message_id in message_ids:
