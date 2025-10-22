@@ -13,3 +13,9 @@ database:
 bot:
   token: 7997238478:AAG8FSzYvh1qRFUwlExahTX7FrzbDZxkUe4
   group_id: 7997238478:AAG8FSzYvh1qRFUwlExahTX7FrzbDZxkUe4
+rabbit:
+  host: localhost
+#  host: rabbitmq
+  port: 5672
+  user: admin
+  password: password

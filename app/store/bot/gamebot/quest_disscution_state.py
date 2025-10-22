@@ -5,7 +5,7 @@ from app.store.bot.utils import (
     TypeFilter,
     filtered_handler,
 )
-from app.store.tg_api.dataclasses import MessageTG
+from app.store.rabbit.dataclasses import MessageTG
 
 
 class QuestionDiscussionProcessGameBot(BotBase):

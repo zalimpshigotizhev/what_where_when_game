@@ -10,7 +10,7 @@ from app.store.bot.utils import (
     escape_markdown,
     filtered_handler,
 )
-from app.store.tg_api.dataclasses import MessageTG
+from app.store.rabbit.dataclasses import MessageTG
 
 
 class WaitAnswer(BotBase):

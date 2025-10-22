@@ -1,0 +1,5 @@
+aiohttp==3.9.3
+aio-pika==9.5.7
+aiormq==6.9.2
+pamqp==3.3.0
+pyyaml==6.0.3

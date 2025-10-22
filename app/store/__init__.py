@@ -6,6 +6,7 @@ from app.store.game.player_accessor import PlayerAccessor
 from app.store.game.round_accessor import RoundAccessor
 from app.store.game.session_accessor import GameSessionAccessor
 from app.store.game.user_accessor import UserAccessor
+from app.store.rabbit.service_manager import RabbitMQAccessor
 from app.store.timer.timer_manager import TimerManager
 
 if typing.TYPE_CHECKING:
@@ -30,6 +31,7 @@ class Store:
 
         # Таймер
         self.timer_manager = TimerManager(app)
+        self.rabbit = RabbitMQAccessor(app)
 
         self.tg_api = TelegramApiAccessor(app)
         self.bots_manager = BotManager(app)

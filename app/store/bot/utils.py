@@ -4,7 +4,7 @@ from typing import Any
 
 from app.bot.game.models import GameState
 from app.store.fsm.fsm import FSMContext
-from app.store.tg_api.dataclasses import (
+from app.store.rabbit.dataclasses import (
     CallbackTG,
     CommandTG,
     MessageTG,

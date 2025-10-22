@@ -14,7 +14,24 @@ services:
       - ./app/:/project/app
     depends_on:
       - postgres
+      - rabbitmq
     restart: unless-stopped
+
+  poller:
+    build: poller/.
+    container_name: poller_app
+    ports:
+      - "8989:8989"
+
+    networks:
+      - db_network
+    volumes:
+      - ./poller/app/:/project/app
+    depends_on:
+      - postgres
+      - rabbitmq
+    restart: unless-stopped
+
   postgres:
     image: postgres:15
     container_name: postgres_db
@@ -47,9 +64,27 @@ services:
     depends_on:
       - postgres
 
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
+      - RABBITMQ_ADDITIONAL_USERS=app_user:app_password:management;
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - db_network
+
 volumes:
   postgres_data:
   pgadmin_data:
+  rabbitmq_data:
 
 networks:
   db_network:

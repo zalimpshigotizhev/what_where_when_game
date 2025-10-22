@@ -9,7 +9,7 @@ from app.bot.game.models import (
 from app.store.bot import consts
 from app.store.bot.gamebot.main_state import MainGameBot
 from app.store.bot.keyboards import main_keyboard, start_game_keyboard
-from app.store.tg_api.dataclasses import CommandTG
+from app.store.rabbit.dataclasses import CommandTG
 
 
 class TestMainGameBot:

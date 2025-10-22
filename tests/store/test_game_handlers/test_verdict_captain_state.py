@@ -5,7 +5,7 @@ import pytest
 from app.bot.game.models import GameState
 from app.store.bot import consts
 from app.store.bot.gamebot.verdict_captain_state import VerdictCaptain
-from app.store.tg_api.dataclasses import EntityTG
+from app.store.rabbit.dataclasses import EntityTG
 
 
 class TestVerdictCaptainState:

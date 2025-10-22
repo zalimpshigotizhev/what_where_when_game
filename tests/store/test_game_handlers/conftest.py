@@ -2,7 +2,7 @@ import pytest
 
 from app.bot.game.models import StateModel
 from app.store.bot.gamebot.base import BotBase
-from app.store.tg_api.dataclasses import CallbackTG, CommandTG, MessageTG
+from app.store.rabbit.dataclasses import CallbackTG, CommandTG, MessageTG
 
 
 @pytest.fixture

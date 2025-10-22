@@ -9,7 +9,7 @@ from app.store.bot.utils import (
     TypeFilter,
     filtered_handler,
 )
-from app.store.tg_api.dataclasses import CallbackTG
+from app.store.rabbit.dataclasses import CallbackTG
 
 
 class AreReadyNextRoundPlayersProcessGameBot(BotBase):

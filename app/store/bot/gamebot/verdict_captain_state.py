@@ -2,7 +2,7 @@ from app.bot.game.models import GameState
 from app.store.bot import consts
 from app.store.bot.gamebot.base import BotBase
 from app.store.bot.utils import StateFilter, TypeFilter, filtered_handler
-from app.store.tg_api.dataclasses import MessageTG
+from app.store.rabbit.dataclasses import MessageTG
 
 
 class VerdictCaptain(BotBase):

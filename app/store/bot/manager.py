@@ -13,7 +13,7 @@ from app.store.bot.gamebot.wait_answer_state import WaitAnswer
 from app.store.bot.gamebot.wait_players_state import (
     WaitingPlayersProcessGameBot,
 )
-from app.store.tg_api.dataclasses import UpdateABC
+from app.store.rabbit.dataclasses import UpdateABC
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -42,13 +42,12 @@ class BotManager:
                 self._handlers.extend(state_handler.handlers)
         return self._handlers
 
-    async def handle_updates(self, updates: list[UpdateABC]):
-        for update in updates:
-            curr_state = await self.app.store.fsm.get_state(
-                chat_id=update.chat.id_
-            )
-            for handler in self._handlers:
-                if callable(handler):
-                    result = await handler(update, curr_state)
-                    if result is not None:
-                        break
+    async def handle_update(self, update: UpdateABC | None):
+        if update is None:
+            return
+        curr_state = await self.app.store.fsm.get_state(chat_id=update.chat.id_)
+        for handler in self._handlers:
+            if callable(handler):
+                result = await handler(update, curr_state)
+                if result is not None:
+                    break

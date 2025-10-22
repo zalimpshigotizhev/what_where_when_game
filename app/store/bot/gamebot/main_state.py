@@ -8,7 +8,7 @@ from app.store.bot.utils import (
     TypeFilter,
     filtered_handler,
 )
-from app.store.tg_api.dataclasses import CallbackTG, CommandTG
+from app.store.rabbit.dataclasses import CallbackTG, CommandTG
 
 
 class MainGameBot(BotBase):
