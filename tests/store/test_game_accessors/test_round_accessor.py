@@ -78,7 +78,7 @@ class TestPlayerAccessor:
     ):
         assert active_round.is_active is True
 
-        await store.rounds.set_is_active_to_false(
+        await store.rounds.set_column_is_active_to_false(
             session_id=active_game_session.id,
         )
 
@@ -103,7 +103,7 @@ class TestPlayerAccessor:
     ):
         assert active_round.is_correct_answer is None
 
-        await store.rounds.set_is_correct_answer(
+        await store.rounds.set_column_is_correct_answer(
             session_id=active_game_session.id, new_is_correct_answer=False
         )
 

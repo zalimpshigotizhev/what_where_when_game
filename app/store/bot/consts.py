@@ -1,12 +1,12 @@
 MAX_PLAYERS = 6
-MIN_PLAYERS = 2
+MIN_PLAYERS = 1
 
 # 30 секунд
 WAIT_ANSWER_TIMEOUT = 30
 # 1 минута
 ARE_READY_TIMEOUT = 60
 # 1 минута
-QUESTION_DISCUTION_TIMEOUT = 60
+QUESTION_DISCUTION_TIMEOUT = 1
 # 2 минуты
 VERDICT_CAPTAIN_TIMEOUT = 60
 
@@ -31,7 +31,7 @@ RULES_INFO = (
     "он будет выбирать кому отвечать на вопрос.\n"
     "- Ведущим является бот, который задает вопросы и ведет счет."
 )
-RUPOR_SCORE = "*Счет*\n" "Знатоки -> *{experts}*\n" "Бот -> *{bot}*"
+RUPOR_SCORE = "*Счет* -> \n" "Знатоки: *{experts}*\n" "Бот: *{bot}*"
 NOT_PLAYER_CHOICE_CAP = (
     "К сожалению ответил не тот игрок, " "которого выбрал капитан."
 )
@@ -63,6 +63,7 @@ MESSAGE_FOR_CAPTAIN = (
     "Отметьте участника игры который будет отвечать\n"
     "{players_for_answer}"
 )
+ONLY_CAPTAIN_FUNC = "Это может делать только капитан!"
 YOU_PLAYER_WITH_GAME = "Теперь вы участник игры!"
 STARTED_GAME_FOR_CAP = "Игра начинается GOOOOD LUCKK!"
 LESS_MIN_PLAYERS = "Игроков присоединилось меньше, чем нужно"
@@ -124,6 +125,19 @@ CAPTAIN_INSTUCTION = (
     "Пройдет 2 минуты и мы не дождемся ответа "
     "от капитана - игра отменится автоматически."
 )
+YOURE_SET_IS_ANSWER_TRUE = (
+    "*Теперь ответ заcчитан правильным!* Вы готовы к следующему вопросу?"
+)
+
+ARE_YOU_SURE_DISPUTE = (
+    "*Внимание, капитан!*\n"
+    "Вы уверены, что на вопрос:\n"
+    "_{question}_\n"
+    "Данный ответ игроком @{player_answer} - {give_answer}\n"
+    "Правильный ответ на вопрос - {true_answer}\n"
+    "Является верным?"
+)
+
 WARNING_CAPTAIN_ONLY = "*Должен отвечать капитан!*"
 WARNING_CAP_DONT_EXIST_PLAYER = (
     "*Уважаемый капитан!*\n "

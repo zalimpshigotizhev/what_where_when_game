@@ -21,3 +21,17 @@ are_ready_keyboard = {
         [{"text": "Готов!", "callback_data": "ready"}],
     ]
 }
+
+yes_or_no_for_dispute = {
+    "inline_keyboard": [
+        [{"text": "Да", "callback_data": "yes_dispute"}],
+        [{"text": "Нет", "callback_data": "no_dispute"}],
+    ]
+}
+
+are_ready_keyboard_or_dispute_answer = {
+    "inline_keyboard": [
+        [{"text": "Готов!", "callback_data": "ready"}],
+        [{"text": "Оспорить прошлый ответ", "callback_data": "disput_answer"}],
+    ]
+}

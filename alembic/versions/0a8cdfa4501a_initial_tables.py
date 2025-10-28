@@ -29,7 +29,7 @@ def upgrade() -> None:
     )
     op.create_table('states',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
-    sa.Column('current_state', sa.Enum('INACTIVE', 'WAITING_FOR_PLAYERS', 'ARE_READY_FIRST_ROUND_PLAYERS', 'QUESTION_DISCUTION', 'VERDICT_CAPTAIN', 'WAIT_ANSWER', 'ARE_READY_NEXT_ROUND_PLAYERS', name='gamestate'), nullable=True),
+    sa.Column('current_state', sa.Enum('INACTIVE', 'WAITING_FOR_PLAYERS', 'ARE_READY_FIRST_ROUND_PLAYERS', 'QUESTION_DISCUTION', 'VERDICT_CAPTAIN', 'WAIT_ANSWER', 'ARE_READY_NEXT_ROUND_PLAYERS', "DISPUTE_ANSWER", name='gamestate'), nullable=True),
     sa.Column('data', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),

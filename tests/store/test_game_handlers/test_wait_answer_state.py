@@ -100,8 +100,8 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=False
         )
-        wait_answer.round_store.set_is_correct_answer = AsyncMock()
-        wait_answer.round_store.set_is_active_to_false = AsyncMock()
+        wait_answer.round_store.set_column_is_correct_answer = AsyncMock()
+        wait_answer.round_store.set_column_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
         wait_answer.check_and_notify_score = AsyncMock(return_value=True)
 
@@ -125,10 +125,10 @@ class TestWaitAnswer:
                 answer=session_game.current_round.question.true_answer.title
             ),
         )
-        wait_answer.round_store.set_is_correct_answer.assert_called_once_with(
+        wait_answer.round_store.set_column_is_correct_answer.assert_called_once_with(
             session_id=session_game.id, new_is_correct_answer=False
         )
-        wait_answer.round_store.set_is_active_to_false.assert_called_once_with(
+        wait_answer.round_store.set_column_is_active_to_false.assert_called_once_with(
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(
@@ -162,8 +162,8 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=False
         )
-        wait_answer.round_store.set_is_correct_answer = AsyncMock()
-        wait_answer.round_store.set_is_active_to_false = AsyncMock()
+        wait_answer.round_store.set_column_is_correct_answer = AsyncMock()
+        wait_answer.round_store.set_column_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
         wait_answer.check_and_notify_score = AsyncMock(return_value=False)
 
@@ -187,10 +187,10 @@ class TestWaitAnswer:
                 answer=session_game.current_round.question.true_answer.title
             ),
         )
-        wait_answer.round_store.set_is_correct_answer.assert_called_once_with(
+        wait_answer.round_store.set_column_is_correct_answer.assert_called_once_with(
             session_id=session_game.id, new_is_correct_answer=False
         )
-        wait_answer.round_store.set_is_active_to_false.assert_called_once_with(
+        wait_answer.round_store.set_column_is_active_to_false.assert_called_once_with(
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(
@@ -221,8 +221,8 @@ class TestWaitAnswer:
             return_value=True
         )
         asyncio.sleep = AsyncMock()
-        wait_answer.round_store.set_is_correct_answer = AsyncMock()
-        wait_answer.round_store.set_is_active_to_false = AsyncMock()
+        wait_answer.round_store.set_column_is_correct_answer = AsyncMock()
+        wait_answer.round_store.set_column_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
         wait_answer.check_and_notify_score = AsyncMock(return_value=True)
 
@@ -246,10 +246,10 @@ class TestWaitAnswer:
                 answer=session_game.current_round.question.true_answer.title
             ),
         )
-        wait_answer.round_store.set_is_correct_answer.assert_called_once_with(
+        wait_answer.round_store.set_column_is_correct_answer.assert_called_once_with(
             session_id=session_game.id, new_is_correct_answer=True
         )
-        wait_answer.round_store.set_is_active_to_false.assert_called_once_with(
+        wait_answer.round_store.set_column_is_active_to_false.assert_called_once_with(
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(
@@ -285,8 +285,8 @@ class TestWaitAnswer:
         session_game.current_round.question.is_answer_is_true = Mock(
             return_value=True
         )
-        wait_answer.round_store.set_is_correct_answer = AsyncMock()
-        wait_answer.round_store.set_is_active_to_false = AsyncMock()
+        wait_answer.round_store.set_column_is_correct_answer = AsyncMock()
+        wait_answer.round_store.set_column_is_active_to_false = AsyncMock()
         wait_answer.next_quest = AsyncMock()
         wait_answer.check_and_notify_score = AsyncMock(return_value=False)
 
@@ -310,10 +310,10 @@ class TestWaitAnswer:
                 answer=session_game.current_round.question.true_answer.title
             ),
         )
-        wait_answer.round_store.set_is_correct_answer.assert_called_once_with(
+        wait_answer.round_store.set_column_is_correct_answer.assert_called_once_with(
             session_id=session_game.id, new_is_correct_answer=True
         )
-        wait_answer.round_store.set_is_active_to_false.assert_called_once_with(
+        wait_answer.round_store.set_column_is_active_to_false.assert_called_once_with(
             session_id=session_game.id
         )
         wait_answer.check_and_notify_score.assert_called_once_with(

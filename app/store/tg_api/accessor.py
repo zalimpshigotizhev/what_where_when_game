@@ -47,6 +47,7 @@ class TelegramApiAccessor(BaseAccessor):
         :param parse_mode: str (По дефолту Markdown)
         :return:
         """
+        logger = getLogger("send_message_tg_api")
         params = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
 
         if reply_markup:
@@ -59,11 +60,94 @@ class TelegramApiAccessor(BaseAccessor):
                 params=params,
             )
         ) as response:
-            data = await response.json()
+            result = await response.json()
+            if response.status == 200 and result.get("ok"):
+                logger.info("Message send successfully: %s", result)
+            else:
+                logger.error(
+                    "Failed to send message. " "Status: %d, " "Response: %s",
+                    response.status,
+                    result,
+                )
 
-            getLogger("send_message_tg_api").info("Result: ok")
+            return MessageTG.from_dict(result.get("result"))
 
-            return MessageTG.from_dict(data.get("result"))
+    async def edit_message(
+        self,
+        chat_id: int,
+        message_id: int,
+        new_text: str,
+        reply_markup: dict[str, Any] | None = None,
+        parse_mode: str = "Markdown",
+    ):
+        """Отправляет СООБЩЕНИЕ в конкретный чат
+        :param chat_id: int
+        :param text: str
+        :param reply_markup: dict
+        :param parse_mode: str (По дефолту Markdown)
+        :return:
+        """
+        logger = getLogger("edit_message_tg_api")
+        params = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": new_text,
+            "parse_mode": parse_mode,
+        }
+
+        if reply_markup:
+            params["reply_markup"] = json.dumps(reply_markup)
+
+        async with self.session.get(
+            self._build_query(
+                self.server,
+                "editMessageText",
+                params=params,
+            )
+        ) as response:
+            result = await response.json()
+            if response.status == 200 and result.get("ok"):
+                logger.info("Message edited successfully: %s", result)
+            else:
+                logger.error(
+                    "Failed to edit message. " "Status: %d, " "Response: %s",
+                    response.status,
+                    result,
+                )
+
+    async def pin_message(
+        self, chat_id: int, message_id: int, unpin: bool = False
+    ):
+        """Отправляет СООБЩЕНИЕ в конкретный чат
+        :param chat_id: int
+        :return:
+        """
+        logger = getLogger("pin_or_unpin_message_tg_api")
+
+        params = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "unpin": unpin,
+        }
+
+        async with self.session.get(
+            self._build_query(
+                self.server,
+                "pinChatMessage",
+                params=params,
+            )
+        ) as response:
+            result = await response.json()
+            if response.status == 200 and result.get("ok"):
+                logger.info("Message pin or unpin successfully: %s", result)
+            else:
+                logger.error(
+                    "Failed to pin or unpin message. "
+                    "Status: %d, "
+                    "Response: %s",
+                    response.status,
+                    result,
+                )
 
     async def answer_callback_query(
         self,
@@ -73,6 +157,8 @@ class TelegramApiAccessor(BaseAccessor):
         cache_time: int = 0,
     ) -> None:
         """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю"""
+        logger = getLogger("answer_message_tg_api")
+
         params = {
             "callback_query_id": callback_query_id,
             "show_alert": show_alert,
@@ -88,11 +174,21 @@ class TelegramApiAccessor(BaseAccessor):
                 "answerCallbackQuery",
                 params=params,
             )
-        ):
-            getLogger("answer_tg_api").info("Result: ok")
+        ) as response:
+            result = await response.json()
+            if response.status == 200 and result.get("ok"):
+                logger.info("Message answer successfully: %s", result)
+            else:
+                logger.error(
+                    "Failed to answer message. " "Status: %d, " "Response: %s",
+                    response.status,
+                    result,
+                )
 
     async def delete_message(self, chat_id: int, message_id: int) -> None:
         """Отправляет УВЕДОМЛЕНИЕ в конкретному пользователю"""
+        logger = getLogger("delete_message_tg_api")
+
         params = {"chat_id": chat_id, "message_id": message_id}
 
         async with self.session.get(
@@ -101,8 +197,16 @@ class TelegramApiAccessor(BaseAccessor):
                 "deleteMessage",
                 params=params,
             )
-        ):
-            getLogger("deleted_tg_api").info("Result: ok")
+        ) as response:
+            result = await response.json()
+            if response.status == 200 and result.get("ok"):
+                logger.info("Message delete successfully: %s", result)
+            else:
+                logger.error(
+                    "Failed to delete message. " "Status: %d, " "Response: %s",
+                    response.status,
+                    result,
+                )
 
     async def delete_messages(self, chat_id: int, message_ids: list[int]):
         for message_id in message_ids:

@@ -48,6 +48,7 @@ class Config:
     bot: BotConfig | None = None
     database: DatabaseConfig | None = None
     rabbit: RabbitConfig | None = None
+    DEBUG: bool = False
 
 
 def get_config_to_dict(config_path: str) -> dict:
@@ -57,6 +58,7 @@ def get_config_to_dict(config_path: str) -> dict:
 
 def setup_config(app: "Application", config_path: str):
     raw_config = get_config_to_dict(config_path=config_path)
+
     app.config = Config(
         session=SessionConfig(
             key=raw_config["session"]["key"],

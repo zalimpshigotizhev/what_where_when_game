@@ -12,6 +12,7 @@ services:
       - db_network
     volumes:
       - ./app/:/project/app
+      - ./config.yml:/project/config.yml
     depends_on:
       - postgres
       - rabbitmq
@@ -27,6 +28,7 @@ services:
       - db_network
     volumes:
       - ./poller/app/:/project/app
+      - ./poller/config.yml:/project/config.yml
     depends_on:
       - postgres
       - rabbitmq
@@ -75,7 +77,6 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=password
-      - RABBITMQ_ADDITIONAL_USERS=app_user:app_password:management;
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:

@@ -49,7 +49,7 @@ def get_url_for_alembic(url_config: str) -> str:
     host = db_config.get("host")
     port = db_config.get("port")
     database = db_config.get("database")
-    print(db_config)
+
     return (
         f"postgresql+asyncpg://"
         f"{user}:{password}@"

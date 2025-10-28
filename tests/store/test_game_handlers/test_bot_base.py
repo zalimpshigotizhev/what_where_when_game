@@ -28,12 +28,12 @@ class TestBotBase:
         message_id = 456
 
         # Настраиваем мок FSM
-        mock_app.store.fsm.get_data.return_value = {}
+        mock_app.store.fsm.get_data_by_csv.return_value = {}
 
         await bot_base.add_message_in_unnecessary_messages(chat_id, message_id)
 
         # Проверяем вызовы
-        mock_app.store.fsm.get_data.assert_called_once_with(chat_id)
+        mock_app.store.fsm.get_data_by_csv.assert_called_once_with(chat_id)
         mock_app.store.fsm.update_data.assert_called_once()
 
     @pytest.mark.asyncio
@@ -44,7 +44,7 @@ class TestBotBase:
             412,
         ]
 
-        mock_app.store.fsm.get_data.return_value = {
+        mock_app.store.fsm.get_data_by_csv.return_value = {
             "unnecessary_messages": unnecessary_messages,
             "other_data": "some_value",
         }
@@ -53,7 +53,7 @@ class TestBotBase:
 
         # Проверяем вызовы
         tg_api = mock_app.store.tg_api
-        mock_app.store.fsm.get_data.assert_called_once_with(chat_id)
+        mock_app.store.fsm.get_data_by_csv.assert_called_once_with(chat_id)
         tg_api.delete_messages.assert_called_once_with(
             chat_id, unnecessary_messages
         )
@@ -505,10 +505,10 @@ class TestBotBase:
         bot_base.player_store.set_all_players_is_ready_false.assert_called_with(
             session_id=session_id
         )
-        bot_base.round_store.set_is_correct_answer.assert_called_with(
+        bot_base.round_store.set_column_is_correct_answer.assert_called_with(
             session_id=session_id, new_is_correct_answer=False
         )
-        bot_base.round_store.set_is_active_to_false.assert_called_with(
+        bot_base.round_store.set_column_is_active_to_false.assert_called_with(
             session_id=session_id
         )
         bot_base.check_and_notify_score.assert_called_with(

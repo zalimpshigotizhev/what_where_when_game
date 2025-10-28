@@ -14,16 +14,13 @@ if typing.TYPE_CHECKING:
     from app.web.app import Application
 
 
-db_states = {1213: {"state": GameState.INACTIVE, "data": {}}}
-
-
 class StateStorageABC(ABC):
     @abstractmethod
     async def get_state(self, chat_id: int):
         pass
 
     @abstractmethod
-    async def set_state(self, chat_id: int, new_state: GameState):
+    async def set_state(self, chat_id: int, new_state):
         pass
 
     @abstractmethod
@@ -44,44 +41,44 @@ class BaseStorage:
         self.app = app
 
 
-class MemoryStorageABC(StateStorageABC, BaseStorage):
-    def get_state(self, chat_id: int):
-        query = db_states.get(chat_id)
-        if query is None:
-            query = self.set_state(chat_id=chat_id, state=GameState.INACTIVE)
-        return query.get("state")
-
-    def set_state(self, chat_id: int, state: GameState):
-        query = db_states.get(chat_id)
-        if query:
-            query["state"] = state
-        else:
-            db_states[chat_id] = {"state": state, "data": {}}
-            query = db_states[chat_id]
-        return query
-
-    def update_data(self, chat_id: int, **kwargs):
-        query = db_states.get(chat_id)
-        if query is None:
-            query = self.set_state(chat_id, GameState.INACTIVE)
-
-        query["data"] = kwargs
-
-    def get_data(self, chat_id: int):
-        query = db_states.get(chat_id)
-        if query is None:
-            query = self.set_state(chat_id, GameState.INACTIVE)
-        return query["data"]
-
-    def clear_data(self, chat_id: int):
-        query = db_states.get(chat_id)
-        if query is None:
-            query = self.set_state(chat_id, GameState.INACTIVE)
-        del query["data"]
+# class MemoryStorageABC(StateStorageABC, BaseStorage):
+#     def get_state(self, chat_id: int):
+#         query = db_states.get(chat_id)
+#         if query is None:
+#             query = self.set_state(chat_id=chat_id, state=GameState.INACTIVE)
+#         return query.get("state")
+#
+#     def set_state(self, chat_id: int, state: GameState):
+#         query = db_states.get(chat_id)
+#         if query:
+#             query["state"] = state
+#         else:
+#             db_states[chat_id] = {"state": state, "data": {}}
+#             query = db_states[chat_id]
+#         return query
+#
+#     def update_data(self, chat_id: int, **kwargs):
+#         query = db_states.get(chat_id)
+#         if query is None:
+#             query = self.set_state(chat_id, GameState.INACTIVE)
+#
+#         query["data"] = kwargs
+#
+#     def get_data(self, chat_id: int):
+#         query = db_states.get(chat_id)
+#         if query is None:
+#             query = self.set_state(chat_id, GameState.INACTIVE)
+#         return query["data"]
+#
+#     def clear_data(self, chat_id: int):
+#         query = db_states.get(chat_id)
+#         if query is None:
+#             query = self.set_state(chat_id, GameState.INACTIVE)
+#         del query["data"]
 
 
 class PostgresAsyncStorage(StateStorageABC, BaseStorage):
-    async def get_state(self, chat_id: int) -> GameState | None:
+    async def get_state(self, chat_id: int):
         async with await self.app.database.get_session() as session:
             stmt = (
                 select(StateModel.current_state)
@@ -94,10 +91,9 @@ class PostgresAsyncStorage(StateStorageABC, BaseStorage):
                 )
             )
             res = await session.execute(stmt)
-            state: GameState = res.scalars().one_or_none()
-            return state
+            return res.scalars().one_or_none()
 
-    async def set_state(self, chat_id: int, new_state: GameState) -> None:
+    async def set_state(self, chat_id: int, new_state: "GameState") -> None:
         async with await self.app.database.get_session() as session:
             stmt = (
                 select(StateModel)
@@ -171,15 +167,15 @@ class FSMContext:
         self.app = app
         self.storage: StateStorageABC = PostgresAsyncStorage(app)
 
-    async def get_state(self, chat_id: int) -> GameState | None:
+    async def get_state(self, chat_id: int):
         return await self.storage.get_state(chat_id=chat_id)
 
-    async def set_state(self, chat_id: int, new_state: GameState) -> None:
+    async def set_state(self, chat_id: int, new_state) -> None:
         return await self.storage.set_state(
             chat_id=chat_id, new_state=new_state
         )
 
-    async def update_data(self, chat_id: int, new_data: dict) -> None:
+    async def update_data(self, chat_id: int, new_data: dict) -> dict:
         return await self.storage.update_data(
             chat_id=chat_id, new_data=new_data
         )

@@ -82,6 +82,38 @@ class CommandTG(UpdateABC):
 
 
 @dataclass
+class CallbackTG(UpdateABC):
+    id_: str
+    from_: UserORBotTG
+    message: type["MessageTG"] | None = None
+    inline_message_id: str | None = None
+    chat_instance: str | None = None
+    data: str | None = None
+    game_short_name: str | None = None
+
+    @property
+    def chat(self):
+        return self.message.chat
+
+    @classmethod
+    def from_dict(cls, data):
+        def create_nested(field: str, factory: Callable):
+            if field_data := data.get(field):
+                return factory(field_data)
+            return None
+
+        return cls(
+            id_=data.get("id"),
+            from_=create_nested("from", UserORBotTG.from_dict),
+            message=create_nested("message", MessageTG.from_dict),
+            inline_message_id=data.get("inline_message_id"),
+            chat_instance=data.get("chat_instance"),
+            data=data.get("data"),
+            game_short_name=data.get("game_short_name"),
+        )
+
+
+@dataclass
 class MessageTG(UpdateABC):
     message_id: int
     date: int
@@ -157,34 +189,11 @@ class MessageTG(UpdateABC):
                 )
         return None
 
-
-@dataclass
-class CallbackTG(UpdateABC):
-    id_: str
-    from_: UserORBotTG
-    message: MessageTG | None = None
-    inline_message_id: str | None = None
-    chat_instance: str | None = None
-    data: str | None = None
-    game_short_name: str | None = None
-
-    @property
-    def chat(self):
-        return self.message.chat
-
-    @classmethod
-    def from_dict(cls, data):
-        def create_nested(field: str, factory: Callable):
-            if field_data := data.get(field):
-                return factory(field_data)
-            return None
-
-        return cls(
-            id_=data.get("id"),
-            from_=create_nested("from", UserORBotTG.from_dict),
-            message=create_nested("message", MessageTG.from_dict),
-            inline_message_id=data.get("inline_message_id"),
-            chat_instance=data.get("chat_instance"),
-            data=data.get("data"),
-            game_short_name=data.get("game_short_name"),
-        )
+    def to_callback(self) -> CallbackTG | None:
+        if self.from_.is_bot:
+            return CallbackTG(
+                id_=str(self.message_id),
+                from_=self.from_,
+                data=self.text,
+            )
+        return None

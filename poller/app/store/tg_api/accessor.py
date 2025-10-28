@@ -4,7 +4,7 @@ from urllib.parse import urlencode, urljoin
 from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
-from app.base.base_accessor import BaseAccessor
+from app.store.base import BaseAccessor
 from app.store.tg_api.poller import Poller
 
 if TYPE_CHECKING:
@@ -45,10 +45,14 @@ class TelegramApiAccessor(BaseAccessor):
             self._build_query(
                 host=self.server,
                 method="getUpdates",
-                params={"timeout": self.timeout, "offset": self.offset},
+                params={
+                    "timeout": self.timeout,
+                    "offset": self.offset,
+                },
             )
         ) as response:
             result = await response.json()
+
             mq_manager = self.app.store.mq_manager
             if result.get("ok") and result.get("result"):
                 self.logger.info(result)

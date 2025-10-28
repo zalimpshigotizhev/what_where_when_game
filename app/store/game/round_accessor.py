@@ -41,7 +41,7 @@ class RoundAccessor(BaseAccessor):
             await session.commit()
             return exist_round
 
-    async def set_is_active_to_false(
+    async def set_column_is_active_to_false(
         self,
         session_id: int,
     ) -> RoundModel | None:
@@ -56,10 +56,33 @@ class RoundAccessor(BaseAccessor):
             await session.commit()
             return exist_round
 
-    async def set_is_correct_answer(
+    async def set_column_is_correct_answer(
         self,
-        session_id: int,
         new_is_correct_answer: bool,
+        session_id: int | None = None,
+        round_id: int | None = None,
+    ) -> RoundModel | None:
+        if session_id is None and round_id is None:
+            return None
+
+        async with await self.app.database.get_session() as session:
+            if round_id is not None:
+                stmt = select(RoundModel).where(
+                    RoundModel.id == round_id,
+                )
+            else:
+                stmt = select(RoundModel).where(
+                    RoundModel.session_id == session_id,
+                    RoundModel.is_active.is_(True),
+                )
+            result = await session.execute(stmt)
+            exist_round: RoundModel = result.unique().scalar_one_or_none()
+            exist_round.is_correct_answer = new_is_correct_answer
+            await session.commit()
+            return exist_round
+
+    async def set_column_give_answer_by_player(
+        self, session_id: int, answer_by_player
     ) -> RoundModel | None:
         async with await self.app.database.get_session() as session:
             stmt = select(RoundModel).where(
@@ -68,6 +91,6 @@ class RoundAccessor(BaseAccessor):
             )
             result = await session.execute(stmt)
             exist_round: RoundModel = result.unique().scalar_one_or_none()
-            exist_round.is_correct_answer = new_is_correct_answer
+            exist_round.give_answer_by_player = answer_by_player
             await session.commit()
             return exist_round

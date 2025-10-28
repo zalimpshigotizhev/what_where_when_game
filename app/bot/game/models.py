@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import JSON, BigInteger, Boolean, Column, ForeignKey
+from sqlalchemy import JSON, BigInteger, Boolean, Column, ForeignKey, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Enum
 
@@ -17,6 +17,7 @@ class GameState(enum.Enum):
     QUESTION_DISCUTION = "question_discussion"
     VERDICT_CAPTAIN = "verdict_captain"
     WAIT_ANSWER = "wait_answer"
+    DISPUTE_ANSWER = "dispute_answer"
     ARE_READY_NEXT_ROUND_PLAYERS = "are_ready_next_round_players"
 
 
@@ -89,7 +90,6 @@ class PlayerModel(TimedBaseMixin, BaseModel):
     session_id = Column(
         BigInteger, ForeignKey("sessions.id", ondelete="CASCADE"), unique=False
     )
-    # TODO: Добавлено nullable=False
     is_active = Column(Boolean, default=True, nullable=False)
     is_ready = Column(Boolean, default=False)
     is_captain = Column(Boolean, default=False)
@@ -120,6 +120,7 @@ class RoundModel(TimedBaseMixin, BaseModel):
         ForeignKey("questions.id", ondelete="SET NULL"),
         nullable=True,
     )
+    give_answer_by_player = Column(String, default=None)
     answer_player_id = Column(
         BigInteger,
         ForeignKey("players.id", ondelete="SET NULL"),

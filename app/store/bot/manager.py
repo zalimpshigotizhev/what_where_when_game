@@ -45,6 +45,7 @@ class BotManager:
     async def handle_update(self, update: UpdateABC | None):
         if update is None:
             return
+
         curr_state = await self.app.store.fsm.get_state(chat_id=update.chat.id_)
         for handler in self._handlers:
             if callable(handler):

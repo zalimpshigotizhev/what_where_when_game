@@ -75,6 +75,34 @@ class BotBase:
         data["unnecessary_messages"] = []
         await self.app.store.fsm.update_data(chat_id=chat_id, new_data=data)
 
+    async def get_or_create_and_send_message_id_for_present_score(
+        self, chat_id: int, score: dict
+    ):
+        data = await self.app.store.fsm.get_data(chat_id)
+
+        if data.get("message_id_for_present_score") is None:
+            mess = await self.app.store.tg_api.send_message(
+                chat_id=chat_id,
+                text=consts.RUPOR_SCORE.format(
+                    experts=score.get("experts"), bot=score.get("bot")
+                ),
+            )
+            data["message_id_for_present_score"] = mess.message_id
+            await self.app.store.tg_api.pin_message(
+                chat_id=chat_id, message_id=mess.message_id, unpin=False
+            )
+            await self.app.store.fsm.update_data(chat_id=chat_id, new_data=data)
+        else:
+            await self.app.store.tg_api.edit_message(
+                chat_id=chat_id,
+                message_id=data["message_id_for_present_score"],
+                new_text=consts.RUPOR_SCORE.format(
+                    experts=score.get("experts"), bot=score.get("bot")
+                ),
+            )
+
+        return data["message_id_for_present_score"]
+
     async def cancel_game(
         self,
         current_chat_id: int,
@@ -230,11 +258,9 @@ class BotBase:
     ) -> bool:
         score = await self.game_store.gen_score(session_id=session_id)
 
-        await self.app.store.tg_api.send_message(
+        await self.get_or_create_and_send_message_id_for_present_score(
             chat_id=chat_id,
-            text=consts.RUPOR_SCORE.format(
-                experts=score.get("experts"), bot=score.get("bot")
-            ),
+            score=score,
         )
 
         if score.get("experts") == consts.MAX_SCORE:
@@ -264,10 +290,12 @@ class BotBase:
             session_id=session_id
         )
 
-        await self.round_store.set_is_correct_answer(
+        await self.round_store.set_column_is_correct_answer(
             session_id=session_id, new_is_correct_answer=False
         )
-        await self.round_store.set_is_active_to_false(session_id=session_id)
+        await self.round_store.set_column_is_active_to_false(
+            session_id=session_id
+        )
         await self.check_and_notify_score(
             session_id=session_id, chat_id=current_chat_id
         )
@@ -286,7 +314,16 @@ class BotBase:
             new_state=GameState.ARE_READY_NEXT_ROUND_PLAYERS,
         )
 
-    async def next_quest(self, text: str, chat_id: int, session_id: int):
+    async def next_quest(
+        self,
+        text: str,
+        chat_id: int,
+        session_id: int,
+        keyboard: dict[str, list] | None = None,
+    ):
+        if keyboard is None:
+            keyboard = are_ready_keyboard
+
         await self.player_store.set_all_players_is_ready_false(
             session_id=session_id
         )
@@ -294,7 +331,7 @@ class BotBase:
         mess = await self.app.store.tg_api.send_message(
             chat_id=chat_id,
             text=text,
-            reply_markup=are_ready_keyboard,
+            reply_markup=keyboard,
         )
         await self.add_message_in_unnecessary_messages(
             chat_id=chat_id, message_id=mess.message_id
